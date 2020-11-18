@@ -1,6 +1,31 @@
 # GatewayNode
 
-A Particle project named GatewayNode
+A Particle project named GatewayNode.
+
+This project requires the following hardware:
+    - An LED connected to pin D4.
+    - A button connected to pin D5.
+
+This basic project does two things:
+- Counts the number of button presses.
+- Blinks an LED.
+
+The number of button presses is registered as a Particle Variable, so we can read this variable from the dashboard or API to get the latest value.
+A function to start and stop the blinking LED is registered as a Particle function, so we can call this over the network as well.
+
+You could send an API request to start blinking the LED using the following:
+
+curl https://api.particle.io/v1/devices/DEVICE_ID/blink \
+     -d access_token=TOKEN \
+     -d "args=Start"
+
+You can get DEVICE_ID from the dashboard and generate TOKEN using the Particle CLI, "particle token create".
+
+Overall this project currently tests the following things:
+- Input/Output
+- Serial Logging
+- Particle functions and variables
+- Connecting to the Particle cloud.
 
 ## Welcome to your project!
 
