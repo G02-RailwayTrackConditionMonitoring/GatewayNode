@@ -19,13 +19,30 @@ curl https://api.particle.io/v1/devices/DEVICE_ID/blink \
      -d access_token=TOKEN \
      -d "args=Start"
 
-You can get DEVICE_ID from the dashboard and generate TOKEN using the Particle CLI, "particle token create".
+You can get DEVICE_ID from the dashboard and generate TOKEN using the Particle CLI.
 
 Overall this project currently tests the following things:
 - Input/Output
 - Serial Logging
 - Particle functions and variables
 - Connecting to the Particle cloud.
+
+##Some helpful commands in the Particle CLI:
+
+Put the device into DFU mode (flashing yellow led):
+- particle usb dfu
+
+Once in DFU mode, program the board with:
+- particle flash --usb src/target/1.5.2/boron/GatewayNode.bin
+
+Open the serial monitor with:
+- particle serial monitor
+
+Generate an access token:
+- particle token create
+
+List all devices and their functions/variables:
+- particle list
 
 ## Welcome to your project!
 
