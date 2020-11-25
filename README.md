@@ -6,12 +6,10 @@ This project requires the following hardware:
     - An LED connected to pin D4.
     - A button connected to pin D5.
 
-This basic project does two things:
-- Counts the number of button presses.
-- Blinks an LED.
+This project will search for BLE devices when the button is pressed and will print their addresses and names over serial.
+If there is a device name "GO2" the boron will connect to it.
 
-The number of button presses is registered as a Particle Variable, so we can read this variable from the dashboard or API to get the latest value.
-A function to start and stop the blinking LED is registered as a Particle function, so we can call this over the network as well.
+The cell connection is disabled for this version of the project.
 
 You could send an API request to start blinking the LED using the following:
 
