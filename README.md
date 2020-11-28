@@ -8,6 +8,7 @@ This project requires the following hardware:
 
 This project will search for BLE devices when the button is pressed and will print their addresses and names over serial.
 If there is a device name "GO2" the boron will connect to it.
+The program will look for the "data characterisic" and will print data received thorugh this chracteristic.
 
 The cell connection is disabled for this version of the project.
 

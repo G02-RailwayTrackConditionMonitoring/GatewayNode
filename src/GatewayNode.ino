@@ -12,12 +12,13 @@
 SYSTEM_MODE(SEMI_AUTOMATIC);
 
 //This sets the log level for logging over USB.
-SerialLogHandler logHandler(LOG_LEVEL_TRACE, {{"app", LOG_LEVEL_TRACE}});
+SerialLogHandler logHandler(LOG_LEVEL_ALL, {{"app", LOG_LEVEL_ALL}});
 
 //Public Functions and vairables.
 int blink(String params); 
 int numButtonPress; 
 void scanResultCallback(const BleScanResult *scanResult, void *context);
+void bleRxCallback(const uint8_t* data, size_t len, const BlePeerDevice& peer, void* context);
 
 //Setup the input and output pins.
 int buttonPin = D5;
@@ -25,8 +26,14 @@ int ledPin = D4;
 
 //Gloabl variables
 bool runBlink = false;
+
 bool btDeviceFound = false; //Bluetooth device found.
 particle::BleAddress btAddr;
+const BleUuid serviceUuid("7abd7d09-dabd-4b5d-882d-7f4e5096f8f9"); 
+const char dataUUID [16] = {0xe9,0xa4,0x19,0x3d,0x4d,0x05,0x45,0xf9,0x8b,0xc2,0x91,0x15,0x78,0x6c,0x96,0xc2};;
+const BleUuid dataUuid((uint8_t *)dataUUID,BleUuidOrder::LSB); //LSB must be specified since that is how the ItsyBitsy specifies it.
+BleCharacteristic dataCharcteristic;    
+particle::BlePeerDevice connectedNode;  //Handle for the BLE connection.
 
 // setup() runs once, when the device is first turned on.
 void setup() {
@@ -60,6 +67,7 @@ void setup() {
 
     BLE.on();
 
+    dataCharcteristic.onDataReceived(bleRxCallback,NULL);
 
 }
 
@@ -77,7 +85,27 @@ void loop() {
 
     if(btDeviceFound){
       Log.info("Connecting to BT device.");
-      BLE.connect(btAddr); //Blocking Function.
+      
+      connectedNode = BLE.connect(btAddr,false); //Blocking Function.
+      if(connectedNode.connected()) Log.info("Connected to BT device");
+      
+      BleCharacteristic chars[10];
+      ssize_t num = connectedNode.discoverAllCharacteristics(chars, 10);
+      
+      for(int i =0; i<min(num,10);i++){
+
+      BleUuid uuid = chars[i].UUID();
+       Log.info("UUID: %s\n",uuid.toString().c_str());
+      }
+      
+      bool result = connectedNode.getCharacteristicByUUID(dataCharcteristic,dataUuid);
+      if(result){
+        Log.info("Data charactreristic found!");
+        dataCharcteristic.subscribe(true);
+      }
+
+      
+
     }
 
   }
@@ -127,4 +155,11 @@ void scanResultCallback(const BleScanResult *scanResult, void *context) {
       btAddr = scanResult->address;
       
     }
+}
+
+
+void bleRxCallback(const uint8_t* data, size_t len, const BlePeerDevice& peer, void* context) {
+    
+        Log.info((const char *)data);
+    
 }
