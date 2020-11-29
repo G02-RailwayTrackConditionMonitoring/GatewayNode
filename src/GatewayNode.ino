@@ -35,6 +35,9 @@ const BleUuid dataUuid((uint8_t *)dataUUID,BleUuidOrder::LSB); //LSB must be spe
 BleCharacteristic dataCharcteristic;    
 particle::BlePeerDevice connectedNode;  //Handle for the BLE connection.
 
+uint32_t rxCount;
+uint8_t rxData[2048];
+
 // setup() runs once, when the device is first turned on.
 void setup() {
 
@@ -76,36 +79,52 @@ void loop() {
   // The core of your code will likely live here.
   if(digitalRead(buttonPin) == LOW){
 
-    Log.info("starting scan");
-    int count = BLE.scan(scanResultCallback, NULL); //Blocking function.
+    if(!BLE.connected()){
+      Log.info("starting scan");
+      int count = BLE.scan(scanResultCallback, NULL); //Blocking function.
 
-    if (count > 0) {
-        Log.info("%d devices found", count);
+      if (count > 0) {
+          Log.info("%d devices found", count);
+      }
+
+      if(btDeviceFound){
+        Log.info("Connecting to BT device.");
+        
+        connectedNode = BLE.connect(btAddr,false); //Blocking Function.
+        if(connectedNode.connected()) Log.info("Connected to BT device");
+        
+        BleCharacteristic chars[10];
+        ssize_t num = connectedNode.discoverAllCharacteristics(chars, 10);
+        
+        for(int i =0; i<min(num,10);i++){
+
+        BleUuid uuid = chars[i].UUID();
+        Log.info("UUID: %s\n",uuid.toString().c_str());
+        }
+        
+        bool result = connectedNode.getCharacteristicByUUID(dataCharcteristic,dataUuid);
+        if(result){
+          Log.info("Data charactreristic found!");
+          dataCharcteristic.subscribe(true);
+        }
+      }
     }
+    else if(BLE.connected()){
+      Log.info("Received %d bytes.",rxCount);
+      
+      uint8_t good = 1;
+      for(uint32_t i = 0; i<rxCount;i++){
 
-    if(btDeviceFound){
-      Log.info("Connecting to BT device.");
-      
-      connectedNode = BLE.connect(btAddr,false); //Blocking Function.
-      if(connectedNode.connected()) Log.info("Connected to BT device");
-      
-      BleCharacteristic chars[10];
-      ssize_t num = connectedNode.discoverAllCharacteristics(chars, 10);
-      
-      for(int i =0; i<min(num,10);i++){
-
-      BleUuid uuid = chars[i].UUID();
-       Log.info("UUID: %s\n",uuid.toString().c_str());
+         if(rxData[i] !=  (i%256)) good = 0;
       }
-      
-      bool result = connectedNode.getCharacteristicByUUID(dataCharcteristic,dataUuid);
-      if(result){
-        Log.info("Data charactreristic found!");
-        dataCharcteristic.subscribe(true);
+      if(!good){
+        for(int i=0;i<rxCount;i++){
+        Log.info("%d",rxData[i]);
+        }
       }
-
-      
-
+      Log.info("Packets were good: %d",good);
+      rxCount = 0; //Reset the rx count.
+      memset(rxData,0,2048);
     }
 
   }
@@ -159,7 +178,9 @@ void scanResultCallback(const BleScanResult *scanResult, void *context) {
 
 
 void bleRxCallback(const uint8_t* data, size_t len, const BlePeerDevice& peer, void* context) {
-    
-        Log.info((const char *)data);
-    
+      
+        
+        memcpy(&rxData[rxCount],data,len);
+        rxCount += len;
+        digitalWriteFast(ledPin,!digitalRead(ledPin));
 }
