@@ -8,11 +8,17 @@
         "tuple": "cpp",
         "type_traits": "cpp",
         "xutility": "cpp",
-        "xmemory": "cpp"
+        "xmemory": "cpp",
+        "atomic": "cpp",
+        "chrono": "cpp",
+        "xstring": "cpp"
     },
     "particle.targetDevice": "Boron_1",
     "particle.targetPlatform": "boron",
     "particle.compileDefines": [
-        "-DDebug"
-    ]
+        "-DDebug",
+        "-DBLE_WIRING_DEBUG_ENABLED",
+        "-DDEBUG_BUILD"
+    ],
+    "particle.firmwareVersion": "2.0.0"
 }

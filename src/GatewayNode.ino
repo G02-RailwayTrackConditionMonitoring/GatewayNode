@@ -5,7 +5,8 @@
  * Date:
  */
 
-
+#include "ble_hal.h"
+//#include "spark_wiring_ble.h"
 //The system mode changes how the cloud connection is managed.
 //In Semi-Automatic mode, we must initiate the connection and then it is managed by the Particle firmware.
 //This lets us run code before connecting.
@@ -93,6 +94,8 @@ void loop() {
         connectedNode = BLE.connect(btAddr,false); //Blocking Function.
         if(connectedNode.connected()) Log.info("Connected to BT device");
         
+      
+
         BleCharacteristic chars[10];
         ssize_t num = connectedNode.discoverAllCharacteristics(chars, 10);
         
@@ -106,25 +109,40 @@ void loop() {
         if(result){
           Log.info("Data charactreristic found!");
           dataCharcteristic.subscribe(true);
+          
+          int result =  hal_ble_gatt_set_att_mtu(233, NULL);
+          Log.info("Change ATT MTU: %d", result);
+          hal_ble_conn_info_t conn_info;
+          result = hal_ble_gap_get_connection_info(0, &conn_info, NULL);
+          Log.info("get connection infor(0 for success) : %d",result);
+          Log.info("Con att mtu: %d",conn_info.att_mtu);
+          Log.info("Con role: %d",conn_info.role);
+          Log.info("Con version: %d",conn_info.version);
+
+
         }
       }
     }
     else if(BLE.connected()){
       Log.info("Received %d bytes.",rxCount);
       
-      uint8_t good = 1;
-      for(uint32_t i = 0; i<rxCount;i++){
-
-         if(rxData[i] !=  (i%256)) good = 0;
-      }
-      if(!good){
-        for(int i=0;i<rxCount;i++){
-        Log.info("%d",rxData[i]);
-        }
-      }
-      Log.info("Packets were good: %d",good);
       rxCount = 0; //Reset the rx count.
       memset(rxData,0,2048);
+           hal_ble_conn_info_t conn_info;
+          int result = hal_ble_gap_get_connection_info(0, &conn_info, NULL);
+          Log.info("get connection infor(0 for success) : %d",result);
+          Log.info("Con att mtu: %d",conn_info.att_mtu);
+          Log.info("Con role: %d",conn_info.role);
+          Log.info("Con version: %d",conn_info.version);
+          
+          result =  hal_ble_gatt_set_att_mtu(233, NULL);
+          Log.info("Change ATT MTU: %d", result);
+          
+          result = hal_ble_gap_get_connection_info(0, &conn_info, NULL);
+          Log.info("get connection infor(0 for success) : %d",result);
+          Log.info("Con att mtu: %d",conn_info.att_mtu);
+          Log.info("Con role: %d",conn_info.role);
+          Log.info("Con version: %d",conn_info.version);
     }
 
   }
@@ -179,8 +197,9 @@ void scanResultCallback(const BleScanResult *scanResult, void *context) {
 
 void bleRxCallback(const uint8_t* data, size_t len, const BlePeerDevice& peer, void* context) {
       
-        
+        Log.info("%d",len);
         memcpy(&rxData[rxCount],data,len);
         rxCount += len;
         digitalWriteFast(ledPin,!digitalRead(ledPin));
+
 }
