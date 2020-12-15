@@ -110,7 +110,7 @@ void loop() {
           Log.info("Data charactreristic found!");
           dataCharcteristic.subscribe(true);
           
-          int result =  hal_ble_gatt_set_att_mtu(233, NULL);
+          int result =  hal_ble_gatt_set_att_mtu(247, NULL);
           Log.info("Change ATT MTU: %d", result);
           hal_ble_conn_info_t conn_info;
           result = hal_ble_gap_get_connection_info(0, &conn_info, NULL);
