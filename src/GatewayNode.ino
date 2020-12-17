@@ -20,6 +20,7 @@ int blink(String params);
 int numButtonPress; 
 void scanResultCallback(const BleScanResult *scanResult, void *context);
 void bleRxCallback(const uint8_t* data, size_t len, const BlePeerDevice& peer, void* context);
+void disconnectCallback(const BlePeerDevice& peer, void* context);
 
 //Setup the input and output pins.
 int buttonPin = D5;
@@ -34,10 +35,14 @@ const BleUuid serviceUuid("7abd7d09-dabd-4b5d-882d-7f4e5096f8f9");
 const char dataUUID [16] = {0xe9,0xa4,0x19,0x3d,0x4d,0x05,0x45,0xf9,0x8b,0xc2,0x91,0x15,0x78,0x6c,0x96,0xc2};;
 const BleUuid dataUuid((uint8_t *)dataUUID,BleUuidOrder::LSB); //LSB must be specified since that is how the ItsyBitsy specifies it.
 BleCharacteristic dataCharcteristic;    
-particle::BlePeerDevice connectedNode;  //Handle for the BLE connection.
+particle::BlePeerDevice connectedNodes[2];  //Handle for the BLE connection.
+uint8_t numConnections = 0;
 
+//For benchmarking.
 uint32_t rxCount;
 uint8_t rxData[2048];
+uint32_t startTime=0;
+uint32_t endTime=0;
 
 // setup() runs once, when the device is first turned on.
 void setup() {
@@ -72,7 +77,7 @@ void setup() {
     BLE.on();
 
     dataCharcteristic.onDataReceived(bleRxCallback,NULL);
-
+    BLE.onDisconnected(disconnectCallback, NULL);
 }
 
 // loop() runs over and over again, as quickly as it can execute.
@@ -91,13 +96,14 @@ void loop() {
       if(btDeviceFound){
         Log.info("Connecting to BT device.");
         
-        connectedNode = BLE.connect(btAddr,false); //Blocking Function.
-        if(connectedNode.connected()) Log.info("Connected to BT device");
-        
-      
+        connectedNodes[numConnections] = BLE.connect(btAddr,false); //Blocking Function.
+        if(connectedNodes[numConnections].connected()){ 
+          Log.info("Connected to BT device");
+
+        btDeviceFound = false; // reset flag
 
         BleCharacteristic chars[10];
-        ssize_t num = connectedNode.discoverAllCharacteristics(chars, 10);
+        ssize_t num = connectedNodes[numConnections].discoverAllCharacteristics(chars, 10);
         
         for(int i =0; i<min(num,10);i++){
 
@@ -105,7 +111,7 @@ void loop() {
         Log.info("UUID: %s\n",uuid.toString().c_str());
         }
         
-        bool result = connectedNode.getCharacteristicByUUID(dataCharcteristic,dataUuid);
+        bool result = connectedNodes[numConnections].getCharacteristicByUUID(dataCharcteristic,dataUuid);
         if(result){
           Log.info("Data charactreristic found!");
           dataCharcteristic.subscribe(true);
@@ -118,32 +124,13 @@ void loop() {
           Log.info("Con att mtu: %d",conn_info.att_mtu);
           Log.info("Con role: %d",conn_info.role);
           Log.info("Con version: %d",conn_info.version);
-
+          numConnections++;
+          }
 
         }
       }
     }
-    else if(BLE.connected()){
-      Log.info("Received %d bytes.",rxCount);
-      
-      rxCount = 0; //Reset the rx count.
-      memset(rxData,0,2048);
-           hal_ble_conn_info_t conn_info;
-          int result = hal_ble_gap_get_connection_info(0, &conn_info, NULL);
-          Log.info("get connection infor(0 for success) : %d",result);
-          Log.info("Con att mtu: %d",conn_info.att_mtu);
-          Log.info("Con role: %d",conn_info.role);
-          Log.info("Con version: %d",conn_info.version);
-          
-          result =  hal_ble_gatt_set_att_mtu(233, NULL);
-          Log.info("Change ATT MTU: %d", result);
-          
-          result = hal_ble_gap_get_connection_info(0, &conn_info, NULL);
-          Log.info("get connection infor(0 for success) : %d",result);
-          Log.info("Con att mtu: %d",conn_info.att_mtu);
-          Log.info("Con role: %d",conn_info.role);
-          Log.info("Con version: %d",conn_info.version);
-    }
+
 
   }
   if(runBlink){
@@ -185,7 +172,7 @@ void scanResultCallback(const BleScanResult *scanResult, void *context) {
         Log.info("deviceName: %s", name.c_str());
     }
 
-    if(strcmp(name,"G02") ==0){
+    if(strcmp(name,"G02_A") ==0 || strcmp(name,"G02_B") ==0){
       //Save the address of the device with name G02.
       //And notify the main loop.
       btDeviceFound = true;
@@ -194,12 +181,36 @@ void scanResultCallback(const BleScanResult *scanResult, void *context) {
     }
 }
 
+void disconnectCallback(const BlePeerDevice& peer, void* context){
 
+  //Should try and reconnect. For now just drop the connection.
+  for(int i=0; i<numConnections; i++){
+
+    if(!connectedNodes[i].connected()){
+        Log.info("node %d disconnected",i);
+        numConnections = i;
+    }
+  }
+
+}
 void bleRxCallback(const uint8_t* data, size_t len, const BlePeerDevice& peer, void* context) {
       
         Log.info("%d",len);
-        memcpy(&rxData[rxCount],data,len);
-        rxCount += len;
+        rxCount += len;  //At this point we only count the number of bytes received.
+
+        if(data[0] == 0xA5) startTime = millis();
+        else if(data[0] == 0x5A){
+
+          endTime = millis();
+          uint32_t totalTime = (endTime-startTime);
+
+          Log.info("start: %lu, end: %lu.",startTime,endTime);
+          Log.info("Received %d bytes in %lu ms. %f bytes/second.",rxCount, totalTime ,rxCount/(totalTime/1000.0)); 
+          
+          rxCount = 0; //Reset the rx count.
+        }
+
+       
         digitalWriteFast(ledPin,!digitalRead(ledPin));
 
 }
