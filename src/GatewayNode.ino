@@ -6,6 +6,8 @@
  */
 
 #include "ble_hal.h"
+#include <vector>
+
 //#include "spark_wiring_ble.h"
 //The system mode changes how the cloud connection is managed.
 //In Semi-Automatic mode, we must initiate the connection and then it is managed by the Particle firmware.
@@ -35,7 +37,7 @@ const BleUuid serviceUuid("7abd7d09-dabd-4b5d-882d-7f4e5096f8f9");
 const char dataUUID [16] = {0xe9,0xa4,0x19,0x3d,0x4d,0x05,0x45,0xf9,0x8b,0xc2,0x91,0x15,0x78,0x6c,0x96,0xc2};;
 const BleUuid dataUuid((uint8_t *)dataUUID,BleUuidOrder::LSB); //LSB must be specified since that is how the ItsyBitsy specifies it.
 BleCharacteristic dataCharcteristic;    
-particle::BlePeerDevice connectedNodes[2];  //Handle for the BLE connection.
+std::vector<particle::BlePeerDevice> connectedNodes;  //Handle for the BLE connections.
 uint8_t numConnections = 0;
 
 //For benchmarking.
@@ -85,7 +87,7 @@ void loop() {
   // The core of your code will likely live here.
   if(digitalRead(buttonPin) == LOW){
 
-    if(!BLE.connected()){
+    
       Log.info("starting scan");
       int count = BLE.scan(scanResultCallback, NULL); //Blocking function.
 
@@ -95,41 +97,48 @@ void loop() {
 
       if(btDeviceFound){
         Log.info("Connecting to BT device.");
-        
-        connectedNodes[numConnections] = BLE.connect(btAddr,false); //Blocking Function.
-        if(connectedNodes[numConnections].connected()){ 
+
+        //Try and connect.
+        particle::BlePeerDevice newConnection;
+        newConnection = BLE.connect(btAddr,false); //Blocking Function.
+
+
+        if(newConnection.connected()){ 
           Log.info("Connected to BT device");
 
-        btDeviceFound = false; // reset flag
+          btDeviceFound = false; // reset flag
 
-        BleCharacteristic chars[10];
-        ssize_t num = connectedNodes[numConnections].discoverAllCharacteristics(chars, 10);
-        
-        for(int i =0; i<min(num,10);i++){
-
-        BleUuid uuid = chars[i].UUID();
-        Log.info("UUID: %s\n",uuid.toString().c_str());
-        }
-        
-        bool result = connectedNodes[numConnections].getCharacteristicByUUID(dataCharcteristic,dataUuid);
-        if(result){
-          Log.info("Data charactreristic found!");
-          dataCharcteristic.subscribe(true);
+          BleCharacteristic chars[10];
+          ssize_t num = newConnection.discoverAllCharacteristics(chars, 10);
           
-          int result =  hal_ble_gatt_set_att_mtu(247, NULL);
-          Log.info("Change ATT MTU: %d", result);
-          hal_ble_conn_info_t conn_info;
-          result = hal_ble_gap_get_connection_info(0, &conn_info, NULL);
-          Log.info("get connection infor(0 for success) : %d",result);
-          Log.info("Con att mtu: %d",conn_info.att_mtu);
-          Log.info("Con role: %d",conn_info.role);
-          Log.info("Con version: %d",conn_info.version);
-          numConnections++;
+          for(int i =0; i<min(num,10);i++){
+
+            BleUuid uuid = chars[i].UUID();
+            Log.info("UUID: %s\n",uuid.toString().c_str());
+          }
+        
+          bool result = newConnection.getCharacteristicByUUID(dataCharcteristic,dataUuid);
+          if(result){
+            Log.info("Data charactreristic found!");
+            dataCharcteristic.subscribe(true);
+            
+            int result =  hal_ble_gatt_set_att_mtu(247, NULL);
+            Log.info("Change ATT MTU: %d", result);
+            hal_ble_conn_info_t conn_info;
+            result = hal_ble_gap_get_connection_info(0, &conn_info, NULL);
+            Log.info("get connection infor(0 for success) : %d",result);
+            Log.info("Con att mtu: %d",conn_info.att_mtu);
+            Log.info("Con role: %d",conn_info.role);
+            Log.info("Con version: %d",conn_info.version);
+
+            //Keep reference to the connection.  
+            connectedNodes.push_back(newConnection);
+            numConnections++;
           }
 
         }
       }
-    }
+    
 
 
   }
@@ -185,11 +194,11 @@ void disconnectCallback(const BlePeerDevice& peer, void* context){
 
   //Should try and reconnect. For now just drop the connection.
   for(int i=0; i<numConnections; i++){
-
-    if(!connectedNodes[i].connected()){
-        Log.info("node %d disconnected",i);
-        numConnections = i;
-    }
+      if(connectedNodes[i] == peer){
+        Log.info("device %d(%s) disconnected.",i,connectedNodes[i]);
+        connectedNodes.erase(connectedNodes.begin()+i);
+        numConnections--;
+      }
   }
 
 }
