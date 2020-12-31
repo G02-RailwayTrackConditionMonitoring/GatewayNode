@@ -209,12 +209,19 @@ void bleRxCallback(const uint8_t* data, size_t len, const BlePeerDevice& peer, v
 
         if(data[0] == 0xA5) startTime = millis();
         else if(data[0] == 0x5A){
+          int node=0xFFFF;
+
+          for(int i=0; i<numConnections; i++){
+            if(connectedNodes[i] == peer){
+                node = i;
+             }
+          }
 
           endTime = millis();
           uint32_t totalTime = (endTime-startTime);
 
           Log.info("start: %lu, end: %lu.",startTime,endTime);
-          Log.info("Received %d bytes in %lu ms. %f bytes/second.",rxCount, totalTime ,rxCount/(totalTime/1000.0)); 
+          Log.info("Received %d bytes in %lu ms from conenction %d. %f bytes/second.",rxCount, totalTime ,node,rxCount/(totalTime/1000.0)); 
           
           rxCount = 0; //Reset the rx count.
         }
