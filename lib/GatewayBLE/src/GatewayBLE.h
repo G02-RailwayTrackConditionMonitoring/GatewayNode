@@ -9,6 +9,9 @@
 #define CHARACTERISTIC_UUID     0xe9,0xa4,0x19,0x3d,0x4d,0x05,0x45,0xf9,0x8b,0xc2,0x91,0x15,0x78,0x6c,0x96,0xc2
 #define BLE_MAX_CONNECTION      4
 
+#define BENCHMARK_START_FLAG    0xA5
+#define BENCHMARK_END_FLAG      0x5A
+
 //This groups useful info about a connection together.
 typedef struct{
 
@@ -37,7 +40,6 @@ class GatewayBLE{
         //Returns the number of devices that were connected to.
         int connectBLE();
 
-
         std::vector<bleConnection_t> connectedNodes;  //Handle for the BLE connections.
         uint8_t numConnections;
 
@@ -55,6 +57,18 @@ class GatewayBLE{
 
         //For scanning.
         std::vector<bleConnection_t> foundDevices;  
+
+        //For benchmarking.
+        uint32_t rxCount;
+        uint32_t startTime=0;
+        uint32_t endTime=0;
+        bool benchmarkDone[2] = {false,false}; //Holds wether a device has sent all its data.
+        bool benchmarkInProgress = false;
+
+        //Utility functions
+        
+        //Returns the index of the device with the connection handle "peer".
+        int8_t getDeviceIndex(const BlePeerDevice& peer);
 
         //Callbacks 
         //These are called on the BLE stack, so don't do long operations (delay,etc) or use tons of memory.
