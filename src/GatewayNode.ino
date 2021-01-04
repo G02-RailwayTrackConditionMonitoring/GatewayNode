@@ -7,6 +7,8 @@
 
 #include "ble_hal.h"
 #include <vector>
+#include "GatewayBLE.h"
+
 
 //#include "spark_wiring_ble.h"
 //The system mode changes how the cloud connection is managed.
