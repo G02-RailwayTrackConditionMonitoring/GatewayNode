@@ -45,8 +45,8 @@ uint32_t rxCount;
 uint8_t rxData[2048];
 uint32_t startTime=0;
 uint32_t endTime=0;
-uint8_t benchmarkDone[2] = {0,0}; //Holds wether a device has sent all its data.
-uint8_t benchmarkInProgress = 0;
+bool benchmarkDone[2] = {false,false}; //Holds wether a device has sent all its data.
+bool benchmarkInProgress = false;
 
 // setup() runs once, when the device is first turned on.
 void setup() {
@@ -212,7 +212,7 @@ void bleRxCallback(const uint8_t* data, size_t len, const BlePeerDevice& peer, v
         if(data[0] == 0xA5 && !benchmarkInProgress){
           Log.info("Startred benchmark");
           startTime = millis();
-          benchmarkInProgress = 1;
+          benchmarkInProgress = true;
         }
         else if(data[0] == 0x5A){
 
@@ -223,9 +223,14 @@ void bleRxCallback(const uint8_t* data, size_t len, const BlePeerDevice& peer, v
                 node = i;
              }
           }
-          benchmarkDone[node] = 1;
+          benchmarkDone[node] = true;
 
-          if(benchmarkDone[0] && benchmarkDone[1]){
+          bool done = true;
+          for(int i=0; i<numConnections; i++){
+              done &= benchmarkDone[i];
+          }
+
+          if(done){
             endTime = millis();
             uint32_t totalTime = (endTime-startTime);
 
@@ -233,9 +238,13 @@ void bleRxCallback(const uint8_t* data, size_t len, const BlePeerDevice& peer, v
             Log.info("Received %d bytes in %lu ms from conenction %d. %f bytes/second.",rxCount, totalTime ,node,rxCount/(totalTime/1000.0)); 
             
             rxCount = 0; //Reset the rx count.
-            benchmarkDone[0]= 0;
-            benchmarkDone[1]= 0;
-            benchmarkInProgress = 0;
+
+            //reset the benchmark state.
+            for(int i=0; i<numConnections; i++){
+                benchmarkDone[i] = false;
+            }
+            benchmarkInProgress = false;
+
           }
         }
        
