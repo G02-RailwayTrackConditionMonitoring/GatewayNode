@@ -45,6 +45,8 @@ uint32_t rxCount;
 uint8_t rxData[2048];
 uint32_t startTime=0;
 uint32_t endTime=0;
+bool benchmarkDone[2] = {false,false}; //Holds wether a device has sent all its data.
+bool benchmarkInProgress = false;
 
 // setup() runs once, when the device is first turned on.
 void setup() {
@@ -181,7 +183,7 @@ void scanResultCallback(const BleScanResult *scanResult, void *context) {
         Log.info("deviceName: %s", name.c_str());
     }
 
-    if(strcmp(name,"G02_A") ==0 || strcmp(name,"G02_B") ==0){
+    if(strcmp(name,"G02_A") ==0 || strcmp(name,"G02_B") ==0 || strcmp(name, "G02_C")==0){
       //Save the address of the device with name G02.
       //And notify the main loop.
       btDeviceFound = true;
@@ -204,21 +206,47 @@ void disconnectCallback(const BlePeerDevice& peer, void* context){
 }
 void bleRxCallback(const uint8_t* data, size_t len, const BlePeerDevice& peer, void* context) {
       
-        Log.info("%d",len);
+        //Log.info("%p",&peer);
         rxCount += len;  //At this point we only count the number of bytes received.
 
-        if(data[0] == 0xA5) startTime = millis();
+        if(data[0] == 0xA5 && !benchmarkInProgress){
+          Log.info("Startred benchmark");
+          startTime = millis();
+          benchmarkInProgress = true;
+        }
         else if(data[0] == 0x5A){
 
-          endTime = millis();
-          uint32_t totalTime = (endTime-startTime);
 
-          Log.info("start: %lu, end: %lu.",startTime,endTime);
-          Log.info("Received %d bytes in %lu ms. %f bytes/second.",rxCount, totalTime ,rxCount/(totalTime/1000.0)); 
-          
-          rxCount = 0; //Reset the rx count.
+          int node=0xFFFF;
+          for(int i=0; i<numConnections; i++){
+            if(connectedNodes[i] == peer){
+                node = i;
+             }
+          }
+          benchmarkDone[node] = true;
+
+          bool done = true;
+          for(int i=0; i<numConnections; i++){
+              done &= benchmarkDone[i];
+          }
+
+          if(done){
+            endTime = millis();
+            uint32_t totalTime = (endTime-startTime);
+
+            Log.info("start: %lu, end: %lu.",startTime,endTime);
+            Log.info("Received %d bytes in %lu ms from conenction %d. %f bytes/second.",rxCount, totalTime ,node,rxCount/(totalTime/1000.0)); 
+            
+            rxCount = 0; //Reset the rx count.
+
+            //reset the benchmark state.
+            for(int i=0; i<numConnections; i++){
+                benchmarkDone[i] = false;
+            }
+            benchmarkInProgress = false;
+
+          }
         }
-
        
         digitalWriteFast(ledPin,!digitalRead(ledPin));
 
