@@ -7,6 +7,8 @@
 
 #define SERVICE_UUID            "7abd7d09-dabd-4b5d-882d-7f4e5096f8f9"
 #define CHARACTERISTIC_UUID     0xe9,0xa4,0x19,0x3d,0x4d,0x05,0x45,0xf9,0x8b,0xc2,0x91,0x15,0x78,0x6c,0x96,0xc2
+#define COMMAND_UUID            0xbb,0xe9,0x9d,0x88,0xf7,0xc3,0x4f,0xad,0x8a,0xba,0xd5,0x19,0x25,0x13,0x14,0xc3
+#define TELEMETRY_UUID          0xde,0xfa,0xf0,0x85,0xc8,0x8f,0x4f,0xa5,0xb9,0x8c,0x48,0x94,0xf6,0x71,0x09,0x99
 #define BLE_MAX_CONNECTION      4
 
 #define BENCHMARK_START_FLAG    0xA5
@@ -47,10 +49,14 @@ class GatewayBLE{
 
         //The value of these is from the defined constants at the top of the file.
         BleUuid serviceUuid; 
-        BleUuid characteristicUuid;
+        BleUuid dataStream_Uuid;
+        BleUuid telemetryStream_Uuid;
+        BleUuid commandStream_Uuid;
 
-        //Used for getting data from the sensor nodes.
-        BleCharacteristic dataCharcteristic; 
+        //BLE Characteristics
+        BleCharacteristic dataStream; 
+        BleCharacteristic telemetryStream;
+        BleCharacteristic commandStream;
 
         //We will try and connect to devices with these names.
         const String approvedDevices[BLE_MAX_CONNECTION] = {"G02_A","G02_B","G02_C","G02_D"};
@@ -74,7 +80,10 @@ class GatewayBLE{
         //These are called on the BLE stack, so don't do long operations (delay,etc) or use tons of memory.
 
             //Called when data is received.
-            static void bleRxCallback(const uint8_t* data, size_t len, const BlePeerDevice& peer, void* context);
+            static void bleRxDataCallback(const uint8_t* data, size_t len, const BlePeerDevice& peer, void* context);
+
+            //Called when telemetry is received.
+            static void bleRxTelemetryCallback(const uint8_t* data, size_t len, const BlePeerDevice& peer, void* context);
 
             //Called when a device connectes to the gateway.
             static void connectedCallback(const BlePeerDevice& peer, void* context);

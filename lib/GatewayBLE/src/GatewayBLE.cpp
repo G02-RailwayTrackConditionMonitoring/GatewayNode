@@ -8,14 +8,22 @@ GatewayBLE::GatewayBLE(){
     serviceUuid = BleUuid(SERVICE_UUID);
 
     const char dataUUID [16] = {CHARACTERISTIC_UUID};
-    characteristicUuid = BleUuid((uint8_t *)dataUUID,BleUuidOrder::LSB); //LSB must be specified since that is how the ItsyBitsy specifies it.
+    dataStream_Uuid = BleUuid((uint8_t *)dataUUID,BleUuidOrder::LSB); //LSB must be specified since that is how the ItsyBitsy specifies it.
+
+    const char commandUUID [16] = {COMMAND_UUID};
+    commandStream_Uuid = BleUuid((uint8_t *)commandUUID,BleUuidOrder::LSB); //LSB must be specified since that is how the ItsyBitsy specifies it.
+
+    const char telemetryUUID [16] = {TELEMETRY_UUID};
+    telemetryStream_Uuid = BleUuid((uint8_t *)telemetryUUID,BleUuidOrder::LSB); //LSB must be specified since that is how the ItsyBitsy specifies it.
+
 
 
     //Register all the callbacks.
     BLE.onDisconnected(GatewayBLE::disconnectCallback,this);
     //BLE.onConnected(GatewayBLE::connectedCallback,this);  //We are not using this yet.
 
-    dataCharcteristic.onDataReceived(bleRxCallback,this);
+    dataStream.onDataReceived(bleRxDataCallback,this);
+    dataStream.onDataReceived(bleRxTelemetryCallback,this);
 
 }
 
@@ -42,28 +50,44 @@ int GatewayBLE::connectBLE(){
             Log.info("Connected to BT device: %s", foundDevices[i].name.c_str());
             
             //Print out all characteristics, only needed for debuging.
-            BleCharacteristic chars[4];
-            ssize_t num = newConnection.discoverAllCharacteristics(chars, 4);
+            BleCharacteristic chars[10];
+            ssize_t num = newConnection.discoverAllCharacteristics(chars, 10);
             for(int i =0; i<min(num,4);i++){
                 BleUuid uuid = chars[i].UUID();
                 Log.trace("UUID: %s\n",uuid.toString().c_str());
             }
 
-            //Check if the device has the proper characteristic.
-            bool result = newConnection.getCharacteristicByUUID(dataCharcteristic,characteristicUuid);
-            if(result){
+            //Set the MTU and print some debug info.
+            int result =  hal_ble_gatt_set_att_mtu(247, NULL);
+            Log.trace("Change ATT MTU: %d", result);
+            hal_ble_conn_info_t conn_info;
+            result = hal_ble_gap_get_connection_info(0, &conn_info, NULL);
+            Log.trace("get connection infor(0 for success) : %d",result);
+            Log.trace("Con att mtu: %d",conn_info.att_mtu);
+            Log.trace("Con role: %d",conn_info.role);
+            Log.trace("Con version: %d",conn_info.version);
+
+            //Check if the device has the proper characteristics.
+            bool status = newConnection.getCharacteristicByUUID(dataStream,dataStream_Uuid);
+            if(status){
 
                 Log.info("Data charactreristic found!");
-                dataCharcteristic.subscribe(true);
+                dataStream.subscribe(true);
+            }
+            status &= newConnection.getCharacteristicByUUID(telemetryStream,telemetryStream_Uuid);
+            if(status){
 
-                int result =  hal_ble_gatt_set_att_mtu(247, NULL);
-                Log.trace("Change ATT MTU: %d", result);
-                hal_ble_conn_info_t conn_info;
-                result = hal_ble_gap_get_connection_info(0, &conn_info, NULL);
-                Log.trace("get connection infor(0 for success) : %d",result);
-                Log.trace("Con att mtu: %d",conn_info.att_mtu);
-                Log.trace("Con role: %d",conn_info.role);
-                Log.trace("Con version: %d",conn_info.version);
+                Log.info("Telemetry charactreristic found!");
+                telemetryStream.subscribe(true);
+            }
+            status &= newConnection.getCharacteristicByUUID(commandStream,commandStream_Uuid);
+            if(status){
+
+                Log.info("Command charactreristic found!");
+                commandStream.subscribe(true);
+            }
+
+            if(status){   
 
                 //Keep reference to the connection.  
                 foundDevices[i].conn = newConnection;
@@ -97,7 +121,7 @@ int8_t GatewayBLE::getDeviceIndex(const BlePeerDevice& peer){
 }
 
 
-void GatewayBLE::bleRxCallback(const uint8_t* data, size_t len, const BlePeerDevice& peer, void* context){
+void GatewayBLE::bleRxDataCallback(const uint8_t* data, size_t len, const BlePeerDevice& peer, void* context){
 
     //Get our BLE object, since we set this pointer when we registered the callback.
     GatewayBLE * gatewayBLE = (GatewayBLE *) context;
@@ -141,6 +165,12 @@ void GatewayBLE::bleRxCallback(const uint8_t* data, size_t len, const BlePeerDev
 
 }
 
+void GatewayBLE::bleRxTelemetryCallback(const uint8_t* data, size_t len, const BlePeerDevice& peer, void* context){
+
+    Log.trace("Recevied telemetry packet!");
+
+}
+
 void GatewayBLE::disconnectCallback(const BlePeerDevice& peer, void* context){
    
     //Get our BLE object, since we set this pointer when we registered the callback.
@@ -159,6 +189,7 @@ void GatewayBLE::disconnectCallback(const BlePeerDevice& peer, void* context){
     }
 
 }
+
 
 void GatewayBLE::connectedCallback(const BlePeerDevice& peer, void* context){}
 

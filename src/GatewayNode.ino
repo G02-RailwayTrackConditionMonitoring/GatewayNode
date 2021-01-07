@@ -20,8 +20,8 @@ SYSTEM_MODE(SEMI_AUTOMATIC);
 SerialLogHandler logHandler(LOG_LEVEL_ALL, {{"app", LOG_LEVEL_ALL}});
 
 //Public Functions and vairables.
-int blink(String params); 
-int numButtonPress; 
+// int blink(String params); 
+// int numButtonPress; 
 
 
 //Setup the input and output pins.
@@ -48,8 +48,8 @@ void setup() {
   pinMode(ledPin, OUTPUT);
 
   //Register functions and variables with Particle cloud. Doing this before connecting will save cell data.
-  Particle.function("blink",blink);
-  Particle.variable("buttonPress",numButtonPress);
+  // Particle.function("blink",blink);
+  // Particle.variable("buttonPress",numButtonPress);
   
   //Connect to the cloud. This should automatically connect cellular.
   if(!Particle.connected()){
@@ -76,29 +76,8 @@ void loop() {
       BleStack.connectBLE();
 
   }
-  if(runBlink){
-
-    digitalWrite(ledPin,!digitalRead(ledPin));
-  
-  }
 
 
   delay(1000);
 }
 
-//This function will start or stop blinking the onboard LED.
-int blink(String params){
-
-  if(params == "Start"){
-
-    runBlink = true ;
-    return 1;
-  }
-  else if(params == "Stop"){
-
-    runBlink = false;
-    return 1;
-  }
-  else return -1;
-
-}
