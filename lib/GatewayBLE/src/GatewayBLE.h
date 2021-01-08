@@ -42,6 +42,9 @@ class GatewayBLE{
         //Returns the number of devices that were connected to.
         int connectBLE();
 
+        //This will send a command to all of the sensor nodes. Parameters are a pointer to the data, and the size of the data in bytes.
+        bool sendCommand(const void* command,size_t size);
+
         std::vector<bleConnection_t> connectedNodes;  //Handle for the BLE connections.
         uint8_t numConnections;
 

@@ -23,7 +23,7 @@ GatewayBLE::GatewayBLE(){
     //BLE.onConnected(GatewayBLE::connectedCallback,this);  //We are not using this yet.
 
     dataStream.onDataReceived(bleRxDataCallback,this);
-    dataStream.onDataReceived(bleRxTelemetryCallback,this);
+    telemetryStream.onDataReceived(bleRxTelemetryCallback,this);
 
 }
 
@@ -120,6 +120,12 @@ int8_t GatewayBLE::getDeviceIndex(const BlePeerDevice& peer){
     return result;
 }
 
+ bool GatewayBLE::sendCommand(const void* command,size_t len){
+
+     commandStream.setValue((uint8_t*)command,len);
+     return true; // TODO: Find out what setValue returns. Its a number but I cant find what it means.
+ }
+
 
 void GatewayBLE::bleRxDataCallback(const uint8_t* data, size_t len, const BlePeerDevice& peer, void* context){
 
@@ -167,7 +173,7 @@ void GatewayBLE::bleRxDataCallback(const uint8_t* data, size_t len, const BlePee
 
 void GatewayBLE::bleRxTelemetryCallback(const uint8_t* data, size_t len, const BlePeerDevice& peer, void* context){
 
-    Log.trace("Recevied telemetry packet!");
+    Log.trace("Recevied telemetry packet: %s", data);
 
 }
 

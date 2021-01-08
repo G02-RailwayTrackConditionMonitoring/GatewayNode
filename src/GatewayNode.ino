@@ -75,6 +75,9 @@ void loop() {
       BleStack.scanBLE();
       BleStack.connectBLE();
 
+      delay(1000);
+      Log.trace("Sent Command to sensor nodes!");
+      BleStack.sendCommand("Test Command!",sizeof("Test Command!"));
   }
 
 
