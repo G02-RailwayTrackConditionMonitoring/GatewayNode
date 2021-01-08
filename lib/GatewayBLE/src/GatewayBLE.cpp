@@ -10,8 +10,10 @@ GatewayBLE::GatewayBLE(){
     const char dataUUID [16] = {CHARACTERISTIC_UUID};
     dataStream_Uuid = BleUuid((uint8_t *)dataUUID,BleUuidOrder::LSB); //LSB must be specified since that is how the ItsyBitsy specifies it.
 
-    const char commandUUID [16] = {COMMAND_UUID};
-    commandStream_Uuid = BleUuid((uint8_t *)commandUUID,BleUuidOrder::LSB); //LSB must be specified since that is how the ItsyBitsy specifies it.
+    const char command1UUID [16] = {COMMAND1_UUID};
+    commandStream_Uuids[0] = BleUuid((uint8_t *)command1UUID,BleUuidOrder::LSB); //LSB must be specified since that is how the ItsyBitsy specifies it.
+    const char command2UUID [16] = {COMMAND2_UUID};
+    commandStream_Uuids[1] = BleUuid((uint8_t *)command2UUID,BleUuidOrder::LSB); //LSB must be specified since that is how the ItsyBitsy specifies it.
 
     const char telemetryUUID [16] = {TELEMETRY_UUID};
     telemetryStream_Uuid = BleUuid((uint8_t *)telemetryUUID,BleUuidOrder::LSB); //LSB must be specified since that is how the ItsyBitsy specifies it.
@@ -47,7 +49,11 @@ int GatewayBLE::connectBLE(){
 
         if(newConnection.connected()){
             
-            Log.info("Connected to BT device: %s", foundDevices[i].name.c_str());
+            
+            int index = getDeviceId(foundDevices[i].name);
+            foundDevices[i].idNum = index;
+
+            Log.info("Connected to BT device: %s (%d)", foundDevices[i].name.c_str(),index);
             
             //Print out all characteristics, only needed for debuging.
             BleCharacteristic chars[10];
@@ -80,11 +86,13 @@ int GatewayBLE::connectBLE(){
                 Log.info("Telemetry charactreristic found!");
                 telemetryStream.subscribe(true);
             }
-            status &= newConnection.getCharacteristicByUUID(commandStream,commandStream_Uuid);
+
+            status &= newConnection.getCharacteristicByUUID(commandStreams[index],commandStream_Uuids[index]);
             if(status){
 
-                Log.info("Command charactreristic found!");
-                commandStream.subscribe(true);
+                int resp =  commandStreams[index].subscribe(true);
+                Log.info("Command charactreristic found! %d",resp);
+               
             }
 
             if(status){   
@@ -120,9 +128,21 @@ int8_t GatewayBLE::getDeviceIndex(const BlePeerDevice& peer){
     return result;
 }
 
+
+uint8_t GatewayBLE::getDeviceId(String name){
+
+    for(int i=0; i < BLE_MAX_CONNECTION; i++){
+
+        if(strcmp(name,approvedDevices[i])==0) return i;
+    }
+}
+
  bool GatewayBLE::sendCommand(const void* command,size_t len){
 
-     commandStream.setValue((uint8_t*)command,len);
+     for(int i=0; i < numConnections; i++){
+        
+        commandStreams[connectedNodes[i].idNum].setValue((uint8_t*)command,len);
+     }
      return true; // TODO: Find out what setValue returns. Its a number but I cant find what it means.
  }
 

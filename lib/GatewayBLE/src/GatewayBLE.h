@@ -7,8 +7,11 @@
 
 #define SERVICE_UUID            "7abd7d09-dabd-4b5d-882d-7f4e5096f8f9"
 #define CHARACTERISTIC_UUID     0xe9,0xa4,0x19,0x3d,0x4d,0x05,0x45,0xf9,0x8b,0xc2,0x91,0x15,0x78,0x6c,0x96,0xc2
-#define COMMAND_UUID            0xbb,0xe9,0x9d,0x88,0xf7,0xc3,0x4f,0xad,0x8a,0xba,0xd5,0x19,0x25,0x13,0x14,0xc3
 #define TELEMETRY_UUID          0xde,0xfa,0xf0,0x85,0xc8,0x8f,0x4f,0xa5,0xb9,0x8c,0x48,0x94,0xf6,0x71,0x09,0x99
+
+#define COMMAND1_UUID           0xbb,0xe9,0x9d,0x88,0xf7,0xc3,0x4f,0xad,0x8a,0xba,0xd5,0x19,0x25,0x13,0x14,0xc3
+#define COMMAND2_UUID           0x53,0xd2,0x50,0xbb,0x45,0xba,0x48,0xd7,0xba,0xba,0xc7,0x33,0x61,0x46,0xb5,0x88    
+
 #define BLE_MAX_CONNECTION      4
 
 #define BENCHMARK_START_FLAG    0xA5
@@ -20,6 +23,7 @@ typedef struct{
     String name;
     particle::BleAddress addr;
     particle::BlePeerDevice conn;
+    uint8_t idNum;
 
 } bleConnection_t;
 
@@ -54,12 +58,12 @@ class GatewayBLE{
         BleUuid serviceUuid; 
         BleUuid dataStream_Uuid;
         BleUuid telemetryStream_Uuid;
-        BleUuid commandStream_Uuid;
+        BleUuid commandStream_Uuids[2];
 
         //BLE Characteristics
         BleCharacteristic dataStream; 
         BleCharacteristic telemetryStream;
-        BleCharacteristic commandStream;
+        BleCharacteristic commandStreams[2];
 
         //We will try and connect to devices with these names.
         const String approvedDevices[BLE_MAX_CONNECTION] = {"G02_A","G02_B","G02_C","G02_D"};
@@ -76,8 +80,11 @@ class GatewayBLE{
 
         //Utility functions
         
-        //Returns the index of the device with the connection handle "peer".
+        //Returns the index of the device with the connection handle "peer". This is with repspect to the connectedDevices array.
         int8_t getDeviceIndex(const BlePeerDevice& peer);
+
+        //Returns the device id (index) based on the name. G02_A is 0, G02_B is 1, etc.
+        uint8_t getDeviceId(String name);
 
         //Callbacks 
         //These are called on the BLE stack, so don't do long operations (delay,etc) or use tons of memory.
