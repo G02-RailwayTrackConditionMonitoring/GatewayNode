@@ -5,6 +5,6 @@
     "files.associations": {
         "*.ino": "cpp"
     },
-    "particle.targetDevice": "Boron_1",
+    "particle.targetDevice": "hobbit_chicken",
     "particle.targetPlatform": "boron"
 }
