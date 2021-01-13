@@ -32,6 +32,7 @@ GatewayBLE::GatewayBLE(){
 void GatewayBLE::startBLE(){
 
     BLE.on();
+    BLE.setTxPower(8);
 }
 
 int GatewayBLE::connectBLE(){
