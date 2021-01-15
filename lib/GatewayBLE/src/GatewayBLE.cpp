@@ -33,6 +33,7 @@ void GatewayBLE::startBLE(){
 
     BLE.on();
     BLE.setTxPower(8);
+    BLE.selectAntenna(BleAntennaType::EXTERNAL);
 }
 
 int GatewayBLE::connectBLE(){
