@@ -2,16 +2,23 @@
 
 A Particle project named GatewayNode.
 
+This project now uses the 2.0.0 DeviceOS firmware.
+How to update:
+https://docs.particle.io/reference/device-os/versions/#manually-over-usb
+
 This project requires the following hardware:
     - An LED connected to pin D4.
     - A button connected to pin D5.
 
-This basic project does two things:
-- Counts the number of button presses.
-- Blinks an LED.
+This project will search for BLE devices when the button is pressed and will print their addresses and names over serial.
+If there is a device name "GO2" the boron will connect to it.
+The program will look for the "data characterisic" and will print data received thorugh this chracteristic.
 
-The number of button presses is registered as a Particle Variable, so we can read this variable from the dashboard or API to get the latest value.
-A function to start and stop the blinking LED is registered as a Particle function, so we can call this over the network as well.
+The program will blink the LED when a BLE packet is received, and can receive up to 2048 bytes before overflowing the rx buffer, although this can easily be increased.
+For each packet received, the number of bytes received is printed out. Press the button to print the total number of bytes received since the last transmission.
+You should push the button after running each benchmark, to clear the rx buffer.
+
+The cell connection is disabled for this version of the project.
 
 You could send an API request to start blinking the LED using the following:
 
