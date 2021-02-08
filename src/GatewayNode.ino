@@ -8,33 +8,53 @@ SerialLogHandler logHandler(LOG_LEVEL_WARN, {{"app", LOG_LEVEL_TRACE}});
 #define CS D14
 #define SCK D13
 #define HANDSHAKE A4
-
-char buf[32] = "testing data trans";
-char r_buf[32];
-
+char buf[6] = "hello";
+const size_t READ_BUF_SIZE = 64;
+char readBuf[READ_BUF_SIZE];
+size_t readBufOffset = 0;
 void setup()
 {
+
   Serial.begin(9600);
-  pinMode(MOSI, OUTPUT);
-  pinMode(CS, OUTPUT);
-  pinMode(SCK, OUTPUT);
-  pinMode(MISO, INPUT);
-  pinMode(HANDSHAKE, INPUT);  
-  Log.info("Starting application setup.");
-  SPI.setClockSpeed(1000000);
-  SPI.setBitOrder(MSBFIRST);
-  SPI.setDataMode(SPI_MODE3);
-  SPI.begin(CS);
-  }
+  waitFor(Serial.isConnected, 30000);
+  Serial1.begin(115200, SERIAL_DATA_BITS_8 | SERIAL_STOP_BITS_1 | SERIAL_PARITY_NO); // via TX/RX pins, 9600 8E1.5
+  Serial.println("Starting application setup.");
+}
 
 void loop()
 {
-  while(!digitalRead(HANDSHAKE)){}
-  digitalWrite(CS, LOW);
-  SPI.transfer(buf, r_buf, 32, NULL);
-  digitalWrite(CS, HIGH);
-  Serial.printlnf("send buffer, %s \n",buf);
+  Serial1.printlnf("%s", buf);
+  //how Serial.println(bytesSent);
   delay(200);
-  Serial.printlnf("rcv buffer %s \n",r_buf);
+  // Read data from serial
+  while (Serial1.available())
+  {
+    if (readBufOffset < READ_BUF_SIZE)
+    {
+      char c = Serial1.read();
+      if (c != '\n')
+      {
+        // Add character to buffer
+        readBuf[readBufOffset++] = c;
+      }
+      else
+      {
+        // End of line character found, process line
+        readBuf[readBufOffset] = 0;
+        processBuffer();
+        readBufOffset = 0;
+      }
+    }
+    else
+    {
+      Serial.println("readBuf overflow, emptying buffer");
+      readBufOffset = 0;
+    }
+  }
   delay(1000);
+  //Serial.println("...");
+}
+
+void processBuffer() {
+    Serial.printlnf("Received from Arduino: %s", readBuf);
 }
