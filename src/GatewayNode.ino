@@ -98,3 +98,11 @@ void processBuffer() {
     Serial.print("\n");
 }
 
+void publishData(){
+  data = String::format(
+      "{\"station_a\":\"A\", \"station_b\":\"B\", \"accel\":%d}", accel);
+  Log.trace("Publishing Data");
+  Log.trace(data);
+  digitalWrite(ledPin, HIGH);
+  Particle.publish("sampleData", data, PRIVATE);
+}
