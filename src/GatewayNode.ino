@@ -17,6 +17,21 @@ size_t readBufOffset = 0;
 int64_t t = 0; 
 void setup()
 {
+  #ifdef GCP
+  if (!Particle.connected())
+  {
+    Particle.connect();
+  }
+
+  if (Particle.connected())
+  {
+    Log.info("Connected to the Particle Cloud.");
+  }
+  else
+  {
+    Log.error("Could not connect to the Particle Cloud.");
+  }
+  #endif
   Serial.println("Starting application setup.");
   Serial.begin(9600);
   waitFor(Serial.isConnected, 30000);
