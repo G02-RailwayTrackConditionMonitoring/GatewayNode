@@ -82,9 +82,6 @@ void loop()
     SPI.transfer(spiSendBuf, NULL, 32, NULL);
     digitalWrite(CS, HIGH);
     Serial.printlnf("send buffer, %s \n",spiSendBuf);
-    //delay(1000);
-    //Serial.printlnf("rcv buffer %s \n",r_buf);
-    //delay(1000);
     t = millis();
   }
   
@@ -99,10 +96,11 @@ void processBuffer() {
 }
 
 void publishData(){
+  String data = "";
+  int accel = 5; //random
   data = String::format(
       "{\"station_a\":\"A\", \"station_b\":\"B\", \"accel\":%d}", accel);
   Log.trace("Publishing Data");
   Log.trace(data);
-  digitalWrite(ledPin, HIGH);
   Particle.publish("sampleData", data, PRIVATE);
 }
