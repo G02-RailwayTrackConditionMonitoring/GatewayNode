@@ -23,6 +23,10 @@ SerialLogHandler logHandler(LOG_LEVEL_ALL, {{"app", LOG_LEVEL_ALL}});
 // int blink(String params); 
 // int numButtonPress; 
 
+uint8_t buffAIdx =0;
+uint8_t buffBIdx =0;
+uint8_t bufferA[756]; // Holds about 3 chunks of  42 samples.
+uint8_t bufferB[756];
 
 //Setup the input and output pins.
 int buttonPin = D5;
@@ -74,13 +78,41 @@ void loop() {
 
       BleStack.scanBLE();
       BleStack.connectBLE();
-
-      delay(1000);
-      Log.trace("Sent Command to sensor nodes!");
-      BleStack.sendCommand("Test Command!",sizeof("Test Command!"));
   }
 
+  // //Check if we received data, and copy to bigger buffer for SPI transmision.
+  // uint8_t numBytesA = BleStack.dataAvailable(0);
+  // uint8_t numBytesB = BleStack.dataAvailable(1);
+  // if(numBytesA>0){
+  //   Log.info("%d bytes from A",numBytesA);
+  //   bool dataGood = BleStack.getData(&bufferA[buffAIdx],0);
+  //   buffAIdx += numBytesA;
 
-  delay(1000);
+  //   if(!dataGood) Log.info("Overwrite data A!");
+
+  // }
+  // if(numBytesB){
+  //   Log.info("%d bytes from B",numBytesA);
+  //   bool dataGood = BleStack.getData(&bufferB[buffBIdx],1);
+  //   buffBIdx += numBytesB;
+
+  //   if(!dataGood)  Log.info("Overwrite dataB!");
+  // }
+
+  // //send the data over spi.
+  // if(buffAIdx > 700){
+
+  //   //SPI.send(data)
+  //   buffAIdx = 0;
+  // }
+
+  //   if(buffBIdx > 700){
+
+  //   //SPI.send(data)
+  //   buffBIdx = 0;
+  // }
+
+
+  delay(1);
 }
 
