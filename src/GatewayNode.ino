@@ -122,13 +122,7 @@ void loop()
       readBufOffset = 0;
     }
   }
-  if(digitalRead(HANDSHAKE) && (millis() -t >= 1000)){
-    digitalWrite(CS, LOW);
-    SPI.transfer(spiSendBuf, NULL, 32, NULL);
-    digitalWrite(CS, HIGH);
-    Serial.printlnf("send buffer, %s \n",spiSendBuf);
-    t = millis();
-  }
+
   
 }
 

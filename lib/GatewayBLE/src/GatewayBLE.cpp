@@ -1,5 +1,11 @@
 #include  <GatewayBLE.h>
 
+#define MOSI D12
+#define MISO D11
+#define CS D14
+#define SCK D13
+#define HANDSHAKE A4
+
 GatewayBLE::GatewayBLE(){
 
     numConnections = 0;
@@ -195,19 +201,31 @@ void GatewayBLE::bleRxDataCallback(const uint8_t* data, size_t len, const BlePee
     //Figure out which node we are receiveing from.
     int8_t id = gatewayBLE->getDeviceIndex(peer);
     Log.info("Received %d bytes from node %d.\n",len,id);
-    //Make sure the main loop isn't acessing the memory.
-    os_mutex_lock(gatewayBLE->rxBufferLocks[id]);
-    //We should probably try the lock first(os_thread_trylock), and write to backup buffer if not available, because we don't want to be blocking in this callback.
+memcpy(gatewayBLE->rxBuffers[id],data,len);
+  if(digitalRead(HANDSHAKE)){
+    digitalWrite(CS, LOW);
+    SPI.transfer(gatewayBLE->rxBuffers[id], NULL, 256, NULL);
+    digitalWrite(CS, HIGH);
+    // Serial.printlnf("send buffer, %s \n",spiSendBuf);
+    // t = millis();
+  }
+
+
+
+
+    // //Make sure the main loop isn't acessing the memory.
+    // os_mutex_lock(gatewayBLE->rxBufferLocks[id]);
+    // //We should probably try the lock first(os_thread_trylock), and write to backup buffer if not available, because we don't want to be blocking in this callback.
     
-    if(gatewayBLE->rxBufferIndices[id] !=0){
-        //The data hasn't been read yet, so we are gonna be overwriting :(
-        gatewayBLE->rxBufferOverwrite[id] = true;
-    }
+    // if(gatewayBLE->rxBufferIndices[id] !=0){
+    //     //The data hasn't been read yet, so we are gonna be overwriting :(
+    //     gatewayBLE->rxBufferOverwrite[id] = true;
+    // }
 
-    gatewayBLE->rxBufferIndices[id] = len;
-    memcpy(gatewayBLE->rxBuffers[id],data,len);
+    // gatewayBLE->rxBufferIndices[id] = len;
+    // memcpy(gatewayBLE->rxBuffers[id],data,len);
 
-    os_mutex_unlock(gatewayBLE->rxBufferLocks[id]);    
+    // os_mutex_unlock(gatewayBLE->rxBufferLocks[id]);    
     
 
 }
