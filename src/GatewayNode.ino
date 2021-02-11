@@ -1,7 +1,31 @@
-#include "Arduino.h"
-#include "SPI.h"
+#include "GatewayBLE.h"
+
+
+//#include "spark_wiring_ble.h"
+//The system mode changes how the cloud connection is managed.
+//In Semi-Automatic mode, we must initiate the connection and then it is managed by the Particle firmware.
+//This lets us run code before connecting.
 SYSTEM_MODE(SEMI_AUTOMATIC);
-SerialLogHandler logHandler(LOG_LEVEL_WARN, {{"app", LOG_LEVEL_TRACE}});
+
+//This sets the log level for logging over USB.
+SerialLogHandler logHandler(LOG_LEVEL_ALL, {{"app", LOG_LEVEL_ALL}});
+
+//Public Functions and vairables.
+// int blink(String params); 
+// int numButtonPress; 
+
+uint8_t buffAIdx =0;
+uint8_t buffBIdx =0;
+uint8_t bufferA[756]; // Holds about 3 chunks of  42 samples.
+uint8_t bufferB[756];
+
+//Setup the input and output pins.
+int buttonPin = D5;
+int ledPin = D4; 
+
+//Gloabl variables
+bool runBlink = false;
+GatewayBLE BleStack;
 
 #define MOSI D12
 #define MISO D11
@@ -15,12 +39,23 @@ const size_t READ_BUF_SIZE = 33;
 char readBuf[READ_BUF_SIZE];
 size_t readBufOffset = 0;
 int64_t t = 0; 
+
 void setup()
 {
+
+
+  #ifdef DEBUG
+  delay(3000);
+  Log.info("This is a debug build.");
+  #endif
+
+  Log.info("Starting application setup.");
+
   #ifdef GCP
   if (!Particle.connected())
   {
     Particle.connect();
+
   }
 
   if (Particle.connected())
@@ -31,6 +66,7 @@ void setup()
   {
     Log.error("Could not connect to the Particle Cloud.");
   }
+      
   #endif
   Serial.println("Starting application setup.");
   Serial.begin(9600);
@@ -48,10 +84,19 @@ void setup()
   SPI.setDataMode(SPI_MODE3);
   SPI.begin(CS);  
   t = millis();
+  BleStack.startBLE();
 }
+
 
 void loop()
 {
+  // The core of your code will likely live here.
+  if(digitalRead(buttonPin) == LOW){
+
+      BleStack.scanBLE();
+      BleStack.connectBLE();
+  }
+
   if (Serial1.available())
   {
     if (readBufOffset < READ_BUF_SIZE)
@@ -104,3 +149,4 @@ void publishData(){
   Log.trace(data);
   Particle.publish("sampleData", data, PRIVATE);
 }
+
