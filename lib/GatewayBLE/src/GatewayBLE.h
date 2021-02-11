@@ -12,7 +12,7 @@
 #define COMMAND1_UUID           0xbb,0xe9,0x9d,0x88,0xf7,0xc3,0x4f,0xad,0x8a,0xba,0xd5,0x19,0x25,0x13,0x14,0xc3
 #define COMMAND2_UUID           0x53,0xd2,0x50,0xbb,0x45,0xba,0x48,0xd7,0xba,0xba,0xc7,0x33,0x61,0x46,0xb5,0x88    
 
-#define BLE_MAX_CONNECTION      4
+#define BLE_MAX_CONNECTION      2
 
 #define BENCHMARK_START_FLAG    0xA5
 #define BENCHMARK_END_FLAG      0x5A
@@ -49,6 +49,15 @@ class GatewayBLE{
         //This will send a command to all of the sensor nodes. Parameters are a pointer to the data, and the size of the data in bytes.
         bool sendCommand(const void* command,size_t size);
 
+        //Returns the number of bytes of data in the rx buffer for the node with id "nodeID".
+        int dataAvailable(uint8_t nodeId);
+ 
+
+        //Copies data from the rx buffer of a node into the buffer specified. Use dataAvailable before to get the number of bytes transfered.
+        //Calling this effectively removes data from the rxBufffer.
+        //Returns true if the read was good, false if we have lost data.
+        bool getData(uint8_t* data, uint8_t nodeId);
+
         std::vector<bleConnection_t> connectedNodes;  //Handle for the BLE connections.
         uint8_t numConnections;
 
@@ -66,10 +75,16 @@ class GatewayBLE{
         BleCharacteristic commandStreams[2];
 
         //We will try and connect to devices with these names.
-        const String approvedDevices[BLE_MAX_CONNECTION] = {"G02_A","G02_B","G02_C","G02_D"};
+        const String approvedDevices[BLE_MAX_CONNECTION] = {"G02_A","G02_B"};
 
         //For scanning.
-        std::vector<bleConnection_t> foundDevices;  
+        std::vector<bleConnection_t> foundDevices; 
+
+        //For receiveing data.
+        std::vector<uint8_t> rxBufferIndices;
+        std::vector<uint8_t*> rxBuffers;
+        std::vector<os_mutex_t> rxBufferLocks;
+        std::vector<bool>   rxBufferOverwrite;
 
         //For benchmarking.
         uint32_t rxCount;
@@ -79,6 +94,8 @@ class GatewayBLE{
         bool benchmarkInProgress = false;
 
         //Utility functions
+        //Call from the rx Callback to run the benchmarking.
+        void benchmark(const uint8_t* data, size_t len, const BlePeerDevice& peer, void* context);
         
         //Returns the index of the device with the connection handle "peer". This is with repspect to the connectedDevices array.
         int8_t getDeviceIndex(const BlePeerDevice& peer);
