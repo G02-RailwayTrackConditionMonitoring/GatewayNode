@@ -1,12 +1,3 @@
-/*
- * Project GatewayNode
- * Description:
- * Author:
- * Date:
- */
-
-#include "ble_hal.h"
-#include <vector>
 #include "GatewayBLE.h"
 
 
@@ -36,9 +27,22 @@ int ledPin = D4;
 bool runBlink = false;
 GatewayBLE BleStack;
 
+#define MOSI D12
+#define MISO D11
+#define CS D14
+#define SCK D13
+#define HANDSHAKE A4
+char buf[6] = "hello";
+char spiSendBuf[32] = "SPI transmission - dummy data";
 
-// setup() runs once, when the device is first turned on.
-void setup() {
+const size_t READ_BUF_SIZE = 33;
+char readBuf[READ_BUF_SIZE];
+size_t readBufOffset = 0;
+int64_t t = 0; 
+
+void setup()
+{
+
 
   #ifdef DEBUG
   delay(3000);
@@ -47,32 +51,45 @@ void setup() {
 
   Log.info("Starting application setup.");
 
-  // Put initialization like pinMode and begin functions here.
-  pinMode(buttonPin,INPUT_PULLUP); 
-  pinMode(ledPin, OUTPUT);
+  #ifdef GCP
+  if (!Particle.connected())
+  {
+    Particle.connect();
 
-  //Register functions and variables with Particle cloud. Doing this before connecting will save cell data.
-  // Particle.function("blink",blink);
-  // Particle.variable("buttonPress",numButtonPress);
-  
-  //Connect to the cloud. This should automatically connect cellular.
-  if(!Particle.connected()){
-    //Particle.connect(); //Only connect if were not already connected.
   }
 
-  if(Particle.connected()){
+  if (Particle.connected())
+  {
     Log.info("Connected to the Particle Cloud.");
   }
-  else{
+  else
+  {
     Log.error("Could not connect to the Particle Cloud.");
   }
-
       
+  #endif
+  Serial.println("Starting application setup.");
+  Serial.begin(9600);
+  waitFor(Serial.isConnected, 30000);
+  //UART
+  Serial1.begin(115200, SERIAL_DATA_BITS_8 | SERIAL_STOP_BITS_1 | SERIAL_PARITY_NO); 
+  //SPI
+  pinMode(MOSI, OUTPUT);
+  pinMode(CS, OUTPUT);
+  pinMode(SCK, OUTPUT);
+  pinMode(MISO, INPUT);
+  pinMode(HANDSHAKE, INPUT);  
+  SPI.setClockSpeed(1000000);
+  SPI.setBitOrder(MSBFIRST);
+  SPI.setDataMode(SPI_MODE3);
+  SPI.begin(CS);  
+  t = millis();
   BleStack.startBLE();
 }
 
-// loop() runs over and over again, as quickly as it can execute.
-void loop() {
+
+void loop()
+{
   // The core of your code will likely live here.
   if(digitalRead(buttonPin) == LOW){
 
@@ -80,39 +97,56 @@ void loop() {
       BleStack.connectBLE();
   }
 
-  // //Check if we received data, and copy to bigger buffer for SPI transmision.
-  // uint8_t numBytesA = BleStack.dataAvailable(0);
-  // uint8_t numBytesB = BleStack.dataAvailable(1);
-  // if(numBytesA>0){
-  //   Log.info("%d bytes from A",numBytesA);
-  //   bool dataGood = BleStack.getData(&bufferA[buffAIdx],0);
-  //   buffAIdx += numBytesA;
+  if (Serial1.available())
+  {
+    if (readBufOffset < READ_BUF_SIZE)
+    {
+      char c = Serial1.read();
+      if (c != '\n')
+      {
+        
+        readBuf[readBufOffset++] = c;
+        
+      }
+      else
+      {
+        readBuf[readBufOffset] = 0;
+        processBuffer();
+        readBufOffset = 0;
+        Serial1.printlnf("%s", buf);
+      }
+    }
+    else
+    {
+      Serial.println("readBuf overflow, emptying buffer");
+      readBufOffset = 0;
+    }
+  }
+  if(digitalRead(HANDSHAKE) && (millis() -t >= 1000)){
+    digitalWrite(CS, LOW);
+    SPI.transfer(spiSendBuf, NULL, 32, NULL);
+    digitalWrite(CS, HIGH);
+    Serial.printlnf("send buffer, %s \n",spiSendBuf);
+    t = millis();
+  }
+  
+}
 
-  //   if(!dataGood) Log.info("Overwrite data A!");
+void processBuffer() {
+    Serial.print("Received from Arduino: ");
+    for (int i=0; i<sizeof(readBuf); i++){
+      Serial.print(readBuf[i]);
+    }
+    Serial.print("\n");
+}
 
-  // }
-  // if(numBytesB){
-  //   Log.info("%d bytes from B",numBytesA);
-  //   bool dataGood = BleStack.getData(&bufferB[buffBIdx],1);
-  //   buffBIdx += numBytesB;
-
-  //   if(!dataGood)  Log.info("Overwrite dataB!");
-  // }
-
-  // //send the data over spi.
-  // if(buffAIdx > 700){
-
-  //   //SPI.send(data)
-  //   buffAIdx = 0;
-  // }
-
-  //   if(buffBIdx > 700){
-
-  //   //SPI.send(data)
-  //   buffBIdx = 0;
-  // }
-
-
-  delay(1);
+void publishData(){
+  String data = "";
+  int accel = 5; //random
+  data = String::format(
+      "{\"station_a\":\"A\", \"station_b\":\"B\", \"accel\":%d}", accel);
+  Log.trace("Publishing Data");
+  Log.trace(data);
+  Particle.publish("sampleData", data, PRIVATE);
 }
 
