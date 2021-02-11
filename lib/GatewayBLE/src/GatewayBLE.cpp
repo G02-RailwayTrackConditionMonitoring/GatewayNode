@@ -201,17 +201,12 @@ void GatewayBLE::bleRxDataCallback(const uint8_t* data, size_t len, const BlePee
     //Figure out which node we are receiveing from.
     int8_t id = gatewayBLE->getDeviceIndex(peer);
     Log.info("Received %d bytes from node %d.\n",len,id);
-memcpy(gatewayBLE->rxBuffers[id],data,len);
-  if(digitalRead(HANDSHAKE)){
+    memcpy(gatewayBLE->rxBuffers[id],data,len);
+    if(digitalRead(HANDSHAKE)){
     digitalWrite(CS, LOW);
-    SPI.transfer(gatewayBLE->rxBuffers[id], NULL, 256, NULL);
+    SPI.transfer(gatewayBLE->rxBuffers[id], NULL, len, NULL);
     digitalWrite(CS, HIGH);
-    // Serial.printlnf("send buffer, %s \n",spiSendBuf);
-    // t = millis();
   }
-
-
-
 
     // //Make sure the main loop isn't acessing the memory.
     // os_mutex_lock(gatewayBLE->rxBufferLocks[id]);
@@ -225,8 +220,7 @@ memcpy(gatewayBLE->rxBuffers[id],data,len);
     // gatewayBLE->rxBufferIndices[id] = len;
     // memcpy(gatewayBLE->rxBuffers[id],data,len);
 
-    // os_mutex_unlock(gatewayBLE->rxBufferLocks[id]);    
-    
+    // os_mutex_unlock(gatewayBLE->rxBufferLocks[id]);      
 
 }
 

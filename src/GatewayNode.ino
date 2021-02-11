@@ -71,6 +71,9 @@ void setup()
   Serial.println("Starting application setup.");
   Serial.begin(9600);
   waitFor(Serial.isConnected, 30000);
+
+  pinMode(buttonPin,INPUT_PULLUP);
+
   //UART
   Serial1.begin(115200, SERIAL_DATA_BITS_8 | SERIAL_STOP_BITS_1 | SERIAL_PARITY_NO); 
   //SPI
