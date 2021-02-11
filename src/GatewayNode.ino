@@ -14,10 +14,6 @@ SerialLogHandler logHandler(LOG_LEVEL_ALL, {{"app", LOG_LEVEL_ALL}});
 // int blink(String params); 
 // int numButtonPress; 
 
-uint8_t buffAIdx =0;
-uint8_t buffBIdx =0;
-uint8_t bufferA[756]; // Holds about 3 chunks of  42 samples.
-uint8_t bufferB[756];
 
 //Setup the input and output pins.
 int buttonPin = D5;
@@ -148,5 +144,6 @@ void publishData(){
   Log.trace("Publishing Data");
   Log.trace(data);
   Particle.publish("sampleData", data, PRIVATE);
+  delay(1000);
 }
 
