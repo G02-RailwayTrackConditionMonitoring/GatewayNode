@@ -1,5 +1,5 @@
 #include "GatewayBLE.h"
-
+SYSTEM_THREAD(ENABLED);
 
 //#include "spark_wiring_ble.h"
 //The system mode changes how the cloud connection is managed.
@@ -13,6 +13,8 @@ SerialLogHandler logHandler(LOG_LEVEL_ALL, {{"app", LOG_LEVEL_ALL}});
 //Public Functions and vairables.
 // int blink(String params); 
 // int numButtonPress; 
+
+#define GCP
 
 uint8_t buffAIdx =0;
 uint8_t buffBIdx =0;
@@ -39,6 +41,7 @@ const size_t READ_BUF_SIZE = 33;
 char readBuf[READ_BUF_SIZE];
 size_t readBufOffset = 0;
 int64_t t = 0; 
+
 
 void setup()
 {
@@ -130,11 +133,24 @@ void loop()
 }
 
 void processBuffer() {
-    Serial.print("Received from Arduino: ");
-    for (int i=0; i<sizeof(readBuf); i++){
-      Serial.print(readBuf[i]);
-    }
-    Serial.print("\n");
+
+  String data = "";
+  int accel = 5; //random
+  bool result = false;
+  data = String::format(
+      "{\"station_a\":\"A\", \"station_b\":\"B\", \"accel\":%d}", readBuf[0]);
+  if (Particle.connected()) {
+    Log.trace("Publishing Data");
+    Log.trace(data);
+    result = Particle.publish("sampleData", data, PRIVATE);
+    
+  }
+  Log.trace("Publish successfull: %d",result);
+    // Serial.print("Received from Arduino: ");
+    // for (int i=0; i<sizeof(readBuf); i++){
+    //   Serial.print(readBuf[i]);
+    // }
+    // Serial.print("\n");
 }
 
 void publishData(){
