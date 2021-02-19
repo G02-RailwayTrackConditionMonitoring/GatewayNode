@@ -4,6 +4,7 @@
 #include "ble_hal.h"
 #include "Particle.h"
 #include <vector>
+#include "CircularBuffer.h"
 
 #define SERVICE_UUID            "7abd7d09-dabd-4b5d-882d-7f4e5096f8f9"
 #define CHARACTERISTIC_UUID     0xe9,0xa4,0x19,0x3d,0x4d,0x05,0x45,0xf9,0x8b,0xc2,0x91,0x15,0x78,0x6c,0x96,0xc2
@@ -55,10 +56,10 @@ class GatewayBLE{
         int dataAvailable(uint8_t nodeId);
  
 
-        //Copies data from the rx buffer of a node into the buffer specified. Use dataAvailable before to get the number of bytes transfered.
+        //Copies data from the rx buffer of a node into the circular buffer specified. Make sure that the buffer items are large enough.
         //Calling this effectively removes data from the rxBufffer.
-        //Returns true if the read was good, false if we have lost data.
-        bool getData(uint8_t* data, uint8_t nodeId);
+        //Returns the total number of bytes.
+        uint16_t getData(CircularBuffer& buffer, uint8_t nodeId);
 
         std::vector<bleConnection_t> connectedNodes;  //Handle for the BLE connections.
         uint8_t numConnections;

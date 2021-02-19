@@ -1,4 +1,6 @@
 #include "GatewayBLE.h"
+#include "CircularBuffer.h"
+
 SYSTEM_THREAD(ENABLED);
 
 //#include "spark_wiring_ble.h"
@@ -16,10 +18,14 @@ SerialLogHandler logHandler(LOG_LEVEL_ALL, {{"app", LOG_LEVEL_ALL}});
 
 // #define GCP
 
-uint8_t buffAIdx =0;
-uint8_t buffBIdx =0;
-uint8_t bufferA[756]; // Holds about 3 chunks of  42 samples.
-uint8_t bufferB[756];
+// uint8_t buffAIdx =0;
+// uint8_t buffBIdx =0;
+// uint8_t bufferA[756]; // Holds about 3 chunks of  42 samples.
+ uint8_t spi_buff[241]; //Hold 40 samples +1 byte id.
+// //uint8_t bufferB[756];
+// uint8_t spiBacklog = 0;
+
+CircularBuffer nodeABuff = CircularBuffer(240,4);
 
 //Setup the input and output pins.
 int buttonPin = D5;
@@ -79,6 +85,7 @@ void setup()
 
   pinMode(buttonPin,INPUT_PULLUP);
   pinMode(D7,OUTPUT);
+  pinMode(D6,OUTPUT);
 
   //UART
   Serial1.begin(115200, SERIAL_DATA_BITS_8 | SERIAL_STOP_BITS_1 | SERIAL_PARITY_NO); 
@@ -88,11 +95,13 @@ void setup()
   pinMode(SCK, OUTPUT);
   pinMode(MISO, INPUT);
   pinMode(HANDSHAKE, INPUT);  
-  SPI.setClockSpeed(1000000);
+  SPI.setClockSpeed(8000000);
   SPI.setBitOrder(MSBFIRST);
   SPI.setDataMode(SPI_MODE3);
   SPI.begin(CS);  
   t = millis();
+
+  nodeABuff.printDebugInfo(true);
   BleStack.startBLE();
 }
 
@@ -131,17 +140,45 @@ void loop()
       readBufOffset = 0;
     }
   }
-  uint16_t bytesRx=0;
-  if(bytesRx = BleStack.dataAvailable(0)){
-    BleStack.getData(bufferA,0);
-    if(digitalRead(HANDSHAKE) && !spiBusy){
-      spiBusy = true;
-      digitalWrite(CS, LOW);
-      SPI.transfer(bufferA,NULL,bytesRx,spiDoneHandler);
-      //digitalWrite(CS, HIGH);
-    }
 
+  
+  //Check if we have BLE data to handle.
+  if(BleStack.dataAvailable(0)){
+    BleStack.getData(nodeABuff,0);
+    Log.info("data from A");
+    nodeABuff.printDebugInfo(false);
+    //Just copy data to local buff, so the rx buffs are clear.
   }
+  // if(BleStack.dataAvailable(1)){
+  //   BleStack.getData(nodeBBuff,1);
+  //  //Just copy data to local buff, so the rx buffs are clear.
+  // }
+
+  //Now check if we have data to send over spi. This is seperate to try and spread out the handling over time.
+
+  
+  if( (nodeABuff.getCurrNumItems()>0) && digitalRead(HANDSHAKE) && !spiBusy){
+    Log.info("ready to send 1 of %d over SPI for node A.",nodeABuff.getCurrNumItems());
+    uint8_t* location = nodeABuff.getReadPtr();
+    memcpy(spi_buff,location,nodeABuff.getItemSize());
+    spi_buff[240] = 0;//Last byte indicate this data is from node 0.
+    spiBusy = true;
+      digitalWrite(CS, LOW);
+      SPI.transfer(spi_buff,NULL,241,spiDoneHandler);
+      
+  }
+
+  // if(nodeBBuff.getCurrNumItems() && digitalRead(HANDSHAKE) && !spiBusy){
+  //   uint8_t* location = nodeBBuff.getReadPtr();
+  //   memcpy(spi_buff,location,nodeBBuff.getItemSize());
+  //   spi_buff[240] = 1;//Last byte indicate this data is from node 1.
+  //   spiBusy = true;
+  //   digitalWrite(CS, LOW);
+  //   SPI.transfer(spi_buff,NULL,241,spiDoneHandler);
+      
+  // }
+
+
 }
 
 void processBuffer() {

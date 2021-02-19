@@ -175,17 +175,32 @@ int GatewayBLE::dataAvailable(uint8_t nodeId){
 
 //Copies data from the rx buffer of a node into the buffer specified. Use dataAvailable before to get the number of bytes transfered.
 //Calling this effectively removes data from the rxBufffer.
-//Returns true if the read was good, false if we have lost data.
-bool GatewayBLE::getData(uint8_t* data, uint8_t nodeId){
+//Returns numebr of bytes gotten.
+uint16_t GatewayBLE::getData(CircularBuffer &buffer, uint8_t nodeId){
+        digitalWrite(D6,HIGH);
 
+        
+        uint16_t temp = rxBufferWriteIdx[nodeId];
+        
 
-        memcpy(data,rxBuffers[nodeId],rxBufferWriteIdx[nodeId]);
+        uint16_t itemSize = buffer.getItemSize();
+        Log.info("get data: %d frames",temp/itemSize);
+        for(int i=0; i < temp/itemSize;i++){
+            uint8_t *  location = buffer.getWritePtr();
+            
+            memcpy(location,&(rxBuffers[nodeId][i*itemSize]),itemSize);
+        }
+
+//TODO: the ble callabck is gettting called during this function, so the index gets reset after data is written at location in buffer, so we end up skipping this data.
+//We need to track the current index of the rx buffer, in that function and then somehow just reference it here. rx index should increment on its own, and just wrap around.
+
+        // memcpy(data,rxBuffers[nodeId],rxBufferWriteIdx[nodeId]);
         rxBufferWriteIdx[nodeId] = 0; // Set to zero, so we know that the data has ben read. This should help us tell if we are losing data.
             
-        bool dataGood = !rxBufferOverwrite[nodeId]; //If overwrite is true, that means we lost data so data is not good.
+        //bool dataGood = !rxBufferOverwrite[nodeId]; //If overwrite is true, that means we lost data so data is not good.
         // rxBufferOverwrite[nodeId] = false; //Reset the overwrite tracker.
-
-        return dataGood;
+        digitalWrite(D6,LOW);
+        return temp;
 }
 
 
@@ -197,7 +212,7 @@ void GatewayBLE::bleRxDataCallback(const uint8_t* data, size_t len, const BlePee
 
     //Figure out which node we are receiveing from.
     int8_t id = gatewayBLE->getDeviceIndex(peer);
-    Log.info("%d Received %d bytes from node %d.\n",gatewayBLE->rxCount,len,id);
+    Log.info("%d Received %d bytes from node %d to location %d.\n",gatewayBLE->rxCount,len,id,gatewayBLE->rxBufferWriteIdx[id]);
 
     //Copy data to buffer correpsonding to node we received from.
     memcpy(&(gatewayBLE->rxBuffers[id][gatewayBLE->rxBufferWriteIdx[id]]),data,len);
