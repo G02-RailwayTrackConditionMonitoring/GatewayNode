@@ -14,7 +14,7 @@ SerialLogHandler logHandler(LOG_LEVEL_ALL, {{"app", LOG_LEVEL_ALL}});
 // int blink(String params); 
 // int numButtonPress; 
 
-#define GCP
+// #define GCP
 
 uint8_t buffAIdx =0;
 uint8_t buffBIdx =0;
@@ -42,6 +42,8 @@ char readBuf[READ_BUF_SIZE];
 size_t readBufOffset = 0;
 int64_t t = 0; 
 
+volatile bool spiBusy = false;
+void spiDoneHandler();
 
 void setup()
 {
@@ -76,6 +78,7 @@ void setup()
   waitFor(Serial.isConnected, 30000);
 
   pinMode(buttonPin,INPUT_PULLUP);
+  pinMode(D7,OUTPUT);
 
   //UART
   Serial1.begin(115200, SERIAL_DATA_BITS_8 | SERIAL_STOP_BITS_1 | SERIAL_PARITY_NO); 
@@ -128,8 +131,17 @@ void loop()
       readBufOffset = 0;
     }
   }
+  uint16_t bytesRx=0;
+  if(bytesRx = BleStack.dataAvailable(0)){
+    BleStack.getData(bufferA,0);
+    if(digitalRead(HANDSHAKE) && !spiBusy){
+      spiBusy = true;
+      digitalWrite(CS, LOW);
+      SPI.transfer(bufferA,NULL,bytesRx,spiDoneHandler);
+      //digitalWrite(CS, HIGH);
+    }
 
-  
+  }
 }
 
 void processBuffer() {
@@ -163,3 +175,7 @@ void publishData(){
   Particle.publish("sampleData", data, PRIVATE);
 }
 
+void spiDoneHandler(){
+  digitalWrite(CS,HIGH);
+  spiBusy = false;
+}

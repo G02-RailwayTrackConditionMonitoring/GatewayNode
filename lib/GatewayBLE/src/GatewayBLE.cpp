@@ -33,15 +33,14 @@ GatewayBLE::GatewayBLE(){
 
     for(int i=0; i<BLE_MAX_CONNECTION; i++){
 
-        rxBufferIndices.push_back(0);
+        rxBufferWriteIdx.push_back(0);
+        rxBufferReadIdx.push_back(0);
 
         //We should add error checking for if malloc fails...
-        uint8_t* buff = (uint8_t*)malloc(240);
+        uint8_t* buff = (uint8_t*)malloc(BLE_RX_BUFFER_SIZE);
+        if(buff == NULL) Log.error("BLE Rx Buffer Malloc Failed!");
         rxBuffers.push_back(buff);
 
-        os_mutex_t* lock = (os_mutex_t*)malloc(sizeof(os_mutex_t));
-        int res = os_mutex_create(lock);
-        rxBufferLocks.push_back(*lock);
 
         rxBufferOverwrite.push_back(false);
     }
@@ -156,6 +155,7 @@ uint8_t GatewayBLE::getDeviceId(String name){
 
         if(strcmp(name,approvedDevices[i])==0) return i;
     }
+    return 0xFF;
 }
 
  bool GatewayBLE::sendCommand(const void* command,size_t len){
@@ -170,7 +170,7 @@ uint8_t GatewayBLE::getDeviceId(String name){
 //Returns the number of bytes of data in the rx buffer for the node with id "nodeID".
 int GatewayBLE::dataAvailable(uint8_t nodeId){
 
-    return rxBufferIndices[nodeId];
+    return rxBufferWriteIdx[nodeId];
 }
 
 //Copies data from the rx buffer of a node into the buffer specified. Use dataAvailable before to get the number of bytes transfered.
@@ -178,15 +178,12 @@ int GatewayBLE::dataAvailable(uint8_t nodeId){
 //Returns true if the read was good, false if we have lost data.
 bool GatewayBLE::getData(uint8_t* data, uint8_t nodeId){
 
-        os_mutex_lock(rxBufferLocks[nodeId]); //Make sure BLE thread doesn't modify the buffer while we are copying it.
 
-            memcpy(data,rxBuffers[nodeId],rxBufferIndices[nodeId]);
-            rxBufferIndices[nodeId] = 0; // Set to zero, so we know that the data has ben read. This should help us tell if we are losing data.
+        memcpy(data,rxBuffers[nodeId],rxBufferWriteIdx[nodeId]);
+        rxBufferWriteIdx[nodeId] = 0; // Set to zero, so we know that the data has ben read. This should help us tell if we are losing data.
             
-        os_mutex_unlock(rxBufferLocks[nodeId]);
-
         bool dataGood = !rxBufferOverwrite[nodeId]; //If overwrite is true, that means we lost data so data is not good.
-        rxBufferOverwrite[nodeId] = false; //Reset the overwrite tracker.
+        // rxBufferOverwrite[nodeId] = false; //Reset the overwrite tracker.
 
         return dataGood;
 }
@@ -194,19 +191,31 @@ bool GatewayBLE::getData(uint8_t* data, uint8_t nodeId){
 
 void GatewayBLE::bleRxDataCallback(const uint8_t* data, size_t len, const BlePeerDevice& peer, void* context){
     //This is called from the BLE thread. Beware of thread saftey issues!
-
+    digitalWrite(D7,HIGH);
     //Get our BLE object, since we set this pointer when we registered the callback.
     GatewayBLE * gatewayBLE = (GatewayBLE *) context;
 
     //Figure out which node we are receiveing from.
     int8_t id = gatewayBLE->getDeviceIndex(peer);
-    Log.info("Received %d bytes from node %d.\n",len,id);
-    memcpy(gatewayBLE->rxBuffers[id],data,len);
-    if(digitalRead(HANDSHAKE)){
-    digitalWrite(CS, LOW);
-    SPI.transfer(gatewayBLE->rxBuffers[id], NULL, len, NULL);
-    digitalWrite(CS, HIGH);
-  }
+    Log.info("%d Received %d bytes from node %d.\n",gatewayBLE->rxCount,len,id);
+
+    //Copy data to buffer correpsonding to node we received from.
+    memcpy(&(gatewayBLE->rxBuffers[id][gatewayBLE->rxBufferWriteIdx[id]]),data,len);
+
+    //Update write index.
+    gatewayBLE->rxBufferWriteIdx[id] += len;
+    gatewayBLE->rxBufferWriteIdx[id] = gatewayBLE->rxBufferWriteIdx[id] % BLE_RX_BUFFER_SIZE;
+
+    gatewayBLE->rxCount ++;
+    digitalWrite(D7,LOW);
+
+    // if(digitalRead(HANDSHAKE)){
+    // digitalWrite(CS, LOW);
+    // SPI.transfer(gatewayBLE->rxBuffers[id], NULL, len, NULL);
+    // digitalWrite(CS, HIGH);
+    
+    
+//   }
 
     // //Make sure the main loop isn't acessing the memory.
     // os_mutex_lock(gatewayBLE->rxBufferLocks[id]);

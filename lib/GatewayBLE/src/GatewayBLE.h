@@ -17,6 +17,8 @@
 #define BENCHMARK_START_FLAG    0xA5
 #define BENCHMARK_END_FLAG      0x5A
 
+#define BLE_RX_BUFFER_SIZE      (240*4)
+
 //This groups useful info about a connection together.
 typedef struct{
 
@@ -81,13 +83,13 @@ class GatewayBLE{
         std::vector<bleConnection_t> foundDevices; 
 
         //For receiveing data.
-        std::vector<uint8_t> rxBufferIndices;
+        std::vector<uint16_t> rxBufferWriteIdx;
+        std::vector<uint16_t> rxBufferReadIdx;
         std::vector<uint8_t*> rxBuffers;
-        std::vector<os_mutex_t> rxBufferLocks;
         std::vector<bool>   rxBufferOverwrite;
 
         //For benchmarking.
-        uint32_t rxCount;
+        uint32_t rxCount=0;
         uint32_t startTime=0;
         uint32_t endTime=0;
         bool benchmarkDone[2] = {false,false}; //Holds wether a device has sent all its data.
