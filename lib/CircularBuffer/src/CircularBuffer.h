@@ -19,6 +19,10 @@
     //Returns how many items are in the buffer.
     uint8_t getCurrNumItems();
 
+    uint16_t getItemSize();
+
+    void printDebugInfo(bool verbose);
+
     private:
 
     uint8_t * buffer;   //Raw memory for the whole buffer.
@@ -29,6 +33,8 @@
 
     uint8_t currNumItems;
     uint8_t maxNumItems;
+
+    uint16_t itemSizeBytes;
 
     bool full;
 
