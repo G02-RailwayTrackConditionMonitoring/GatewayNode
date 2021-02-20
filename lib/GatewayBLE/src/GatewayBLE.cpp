@@ -36,11 +36,13 @@ GatewayBLE::GatewayBLE(){
         rxBufferWriteIdx.push_back(0);
         rxBufferReadIdx.push_back(0);
 
-        //We should add error checking for if malloc fails...
-        uint8_t* buff = (uint8_t*)malloc(BLE_RX_BUFFER_SIZE);
-        if(buff == NULL) Log.error("BLE Rx Buffer Malloc Failed!");
-        rxBuffers.push_back(buff);
+        // //We should add error checking for if malloc fails...
+        // uint8_t* buff = (uint8_t*)malloc(BLE_RX_BUFFER_SIZE);
+        // if(buff == NULL) Log.error("BLE Rx Buffer Malloc Failed!");
+        // rxBuffers.push_back(buff);
 
+        rxBuffers.push_back(CircularBuffer(BLE_RX_DATA_SIZE,BLE_RX_BUFFER_COUNT));
+        
 
         rxBufferOverwrite.push_back(false);
     }
@@ -48,6 +50,10 @@ GatewayBLE::GatewayBLE(){
 }
 
 void GatewayBLE::startBLE(){
+
+    for(int i=0; i<BLE_MAX_CONNECTION;i++){
+        rxBuffers[i].printDebugInfo(true);
+    }
 
     BLE.on();
     BLE.setTxPower(8);
@@ -170,40 +176,45 @@ uint8_t GatewayBLE::getDeviceId(String name){
 //Returns the number of bytes of data in the rx buffer for the node with id "nodeID".
 int GatewayBLE::dataAvailable(uint8_t nodeId){
 
-    return rxBufferWriteIdx[nodeId];
+    return rxBuffers[nodeId].getCurrNumItems();
 }
 
 //Copies data from the rx buffer of a node into the buffer specified. Use dataAvailable before to get the number of bytes transfered.
 //Calling this effectively removes data from the rxBufffer.
 //Returns numebr of bytes gotten.
 uint16_t GatewayBLE::getData(CircularBuffer &buffer, uint8_t nodeId){
-        digitalWrite(D6,HIGH);
+        // digitalWrite(D6,HIGH);
 
         
-        uint16_t temp = rxBufferWriteIdx[nodeId];
+        // uint16_t temp = rxBufferWriteIdx[nodeId];
         
 
-        uint16_t itemSize = buffer.getItemSize();
-        Log.info("get data: %d frames",temp/itemSize);
-        for(int i=0; i < temp/itemSize;i++){
-            uint8_t *  location = buffer.getWritePtr();
+        // uint16_t itemSize = buffer.getItemSize();
+        // Log.info("get data: %d frames",temp/itemSize);
+        // for(int i=0; i < temp/itemSize;i++){
+        //     uint8_t *  location = buffer.getWritePtr();
             
-            memcpy(location,&(rxBuffers[nodeId][i*itemSize]),itemSize);
-        }
+        //     memcpy(location,&(rxBuffers[nodeId][i*itemSize]),itemSize);
+            
+        // }
 
 //TODO: the ble callabck is gettting called during this function, so the index gets reset after data is written at location in buffer, so we end up skipping this data.
 //We need to track the current index of the rx buffer, in that function and then somehow just reference it here. rx index should increment on its own, and just wrap around.
 
         // memcpy(data,rxBuffers[nodeId],rxBufferWriteIdx[nodeId]);
-        rxBufferWriteIdx[nodeId] = 0; // Set to zero, so we know that the data has ben read. This should help us tell if we are losing data.
+        //rxBufferWriteIdx[nodeId] = 0; 
             
         //bool dataGood = !rxBufferOverwrite[nodeId]; //If overwrite is true, that means we lost data so data is not good.
         // rxBufferOverwrite[nodeId] = false; //Reset the overwrite tracker.
-        digitalWrite(D6,LOW);
-        return temp;
+        // digitalWrite(D6,LOW);
+        return 0;
 }
 
+   uint8_t * GatewayBLE::getReadPtr(uint8_t nodeId){
+       rxBuffers[nodeId].printDebugInfo(false);
+       return rxBuffers[nodeId].getReadPtr();
 
+   }
 void GatewayBLE::bleRxDataCallback(const uint8_t* data, size_t len, const BlePeerDevice& peer, void* context){
     //This is called from the BLE thread. Beware of thread saftey issues!
     digitalWrite(D7,HIGH);
@@ -212,14 +223,15 @@ void GatewayBLE::bleRxDataCallback(const uint8_t* data, size_t len, const BlePee
 
     //Figure out which node we are receiveing from.
     int8_t id = gatewayBLE->getDeviceIndex(peer);
-    Log.info("%d Received %d bytes from node %d to location %d.\n",gatewayBLE->rxCount,len,id,gatewayBLE->rxBufferWriteIdx[id]);
+    Log.info("%d Received %d bytes from node %d.\n",gatewayBLE->rxCount,len,id);
 
+    uint8_t * location = gatewayBLE->rxBuffers[id].getWritePtr();
     //Copy data to buffer correpsonding to node we received from.
-    memcpy(&(gatewayBLE->rxBuffers[id][gatewayBLE->rxBufferWriteIdx[id]]),data,len);
+    memcpy(location,data,len);
 
     //Update write index.
-    gatewayBLE->rxBufferWriteIdx[id] += len;
-    gatewayBLE->rxBufferWriteIdx[id] = gatewayBLE->rxBufferWriteIdx[id] % BLE_RX_BUFFER_SIZE;
+    // gatewayBLE->rxBufferWriteIdx[id] += len;
+    // gatewayBLE->rxBufferWriteIdx[id] = gatewayBLE->rxBufferWriteIdx[id] % BLE_RX_BUFFER_SIZE;
 
     gatewayBLE->rxCount ++;
     digitalWrite(D7,LOW);

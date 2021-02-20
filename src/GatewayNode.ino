@@ -25,7 +25,7 @@ SerialLogHandler logHandler(LOG_LEVEL_ALL, {{"app", LOG_LEVEL_ALL}});
 // //uint8_t bufferB[756];
 // uint8_t spiBacklog = 0;
 
-CircularBuffer nodeABuff = CircularBuffer(240,4);
+// CircularBuffer nodeABuff = CircularBuffer(240,4);
 
 //Setup the input and output pins.
 int buttonPin = D5;
@@ -101,7 +101,7 @@ void setup()
   SPI.begin(CS);  
   t = millis();
 
-  nodeABuff.printDebugInfo(true);
+  
   BleStack.startBLE();
 }
 
@@ -143,12 +143,12 @@ void loop()
 
   
   //Check if we have BLE data to handle.
-  if(BleStack.dataAvailable(0)){
-    BleStack.getData(nodeABuff,0);
-    Log.info("data from A");
-    nodeABuff.printDebugInfo(false);
-    //Just copy data to local buff, so the rx buffs are clear.
-  }
+  // if(BleStack.dataAvailable(0)){
+  //   BleStack.getData(nodeABuff,0);
+  //   Log.info("data from A");
+  //   nodeABuff.printDebugInfo(false);
+  //   //Just copy data to local buff, so the rx buffs are clear.
+  // }
   // if(BleStack.dataAvailable(1)){
   //   BleStack.getData(nodeBBuff,1);
   //  //Just copy data to local buff, so the rx buffs are clear.
@@ -156,16 +156,17 @@ void loop()
 
   //Now check if we have data to send over spi. This is seperate to try and spread out the handling over time.
 
-  
-  if( (nodeABuff.getCurrNumItems()>0) && digitalRead(HANDSHAKE) && !spiBusy){
-    Log.info("ready to send 1 of %d over SPI for node A.",nodeABuff.getCurrNumItems());
-    uint8_t* location = nodeABuff.getReadPtr();
-    memcpy(spi_buff,location,nodeABuff.getItemSize());
+  uint8_t packets= 0;
+  if( (packets =BleStack.dataAvailable(0)) && (digitalRead(HANDSHAKE)) && (!spiBusy)){
+    digitalWrite(D6,HIGH);
+    Log.info("ready to send 1 of %d over SPI for node A.",packets);
+    uint8_t* location = BleStack.getReadPtr(0);
+    memcpy(spi_buff,location,BLE_RX_DATA_SIZE);
     spi_buff[240] = 0;//Last byte indicate this data is from node 0.
     spiBusy = true;
-      digitalWrite(CS, LOW);
-      SPI.transfer(spi_buff,NULL,241,spiDoneHandler);
-      
+    digitalWrite(CS, LOW);
+    SPI.transfer(spi_buff,NULL,241,spiDoneHandler);//This version of spi.transfer uses dma.
+    digitalWrite(D6,LOW);
   }
 
   // if(nodeBBuff.getCurrNumItems() && digitalRead(HANDSHAKE) && !spiBusy){
@@ -178,7 +179,10 @@ void loop()
       
   // }
 
+ //It can take around 20 us for handshake  to go low after spi transaction, 
+  //so we need delay to wait at least that long otherwise we falsely read the handshake is high and send when the esp is not read.
 
+  delayMicroseconds(100);
 }
 
 void processBuffer() {

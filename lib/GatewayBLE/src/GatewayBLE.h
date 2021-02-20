@@ -18,7 +18,8 @@
 #define BENCHMARK_START_FLAG    0xA5
 #define BENCHMARK_END_FLAG      0x5A
 
-#define BLE_RX_BUFFER_SIZE      (240*4)
+#define BLE_RX_DATA_SIZE        240     //The number of bytes for each BLE data packet.
+#define BLE_RX_BUFFER_COUNT     6       //Number of buffers for each node. Total memory used for buffers will be BLE_RX_BUFFER_COUNT*BLE_RX_DATA_SIZE*BLE_MAX_CONNECTION.
 
 //This groups useful info about a connection together.
 typedef struct{
@@ -61,6 +62,8 @@ class GatewayBLE{
         //Returns the total number of bytes.
         uint16_t getData(CircularBuffer& buffer, uint8_t nodeId);
 
+        uint8_t * getReadPtr(uint8_t nodeId);
+
         std::vector<bleConnection_t> connectedNodes;  //Handle for the BLE connections.
         uint8_t numConnections;
 
@@ -86,7 +89,7 @@ class GatewayBLE{
         //For receiveing data.
         std::vector<uint16_t> rxBufferWriteIdx;
         std::vector<uint16_t> rxBufferReadIdx;
-        std::vector<uint8_t*> rxBuffers;
+        std::vector<CircularBuffer> rxBuffers;
         std::vector<bool>   rxBufferOverwrite;
 
         //For benchmarking.
