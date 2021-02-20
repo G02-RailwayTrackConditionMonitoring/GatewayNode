@@ -18,7 +18,7 @@
         currNumItems = 0;
         maxNumItems = numItems;
         itemSizeBytes = itemSize;
-
+        full = false;
 
 
     }
@@ -50,6 +50,7 @@
         uint8_t temp = readIdx;
         readIdx= (readIdx+1)%maxNumItems;
 
+        SINGLE_THREADED_BLOCK(){
         if(writeIdx>=readIdx){
              currNumItems = writeIdx-readIdx;
         }
@@ -58,6 +59,7 @@
         }
 
         full = false;
+        }
         return itemPtrs[temp];
     }
 
@@ -67,7 +69,7 @@
         uint8_t temp = writeIdx;
         writeIdx = (writeIdx+1)%maxNumItems;
 
-
+        SINGLE_THREADED_BLOCK(){
         if(full){
             readIdx = (readIdx+1) %maxNumItems;//Also move the read index forward, so we read the oldest data.
         }
@@ -82,7 +84,7 @@
         else{
             currNumItems = maxNumItems-readIdx+writeIdx;
         }
-
+        }
         Log.info("Write to circ buff. % items",currNumItems);
         return itemPtrs[temp];
     }
