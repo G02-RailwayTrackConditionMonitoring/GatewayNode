@@ -1,5 +1,6 @@
 #include "GatewayBLE.h"
 #include "CircularBuffer.h"
+#include "CommandHandler.h"
 
 SYSTEM_THREAD(ENABLED);
 
@@ -12,20 +13,12 @@ SYSTEM_MODE(SEMI_AUTOMATIC);
 //This sets the log level for logging over USB.
 SerialLogHandler logHandler(LOG_LEVEL_ALL, {{"app", LOG_LEVEL_ALL}});
 
-//Public Functions and vairables.
-// int blink(String params); 
-// int numButtonPress; 
 
-// #define GCP
+#define GCP
 
-// uint8_t buffAIdx =0;
-// uint8_t buffBIdx =0;
-// uint8_t bufferA[756]; // Holds about 3 chunks of  42 samples.
  uint8_t spi_buff[241]; //Hold 40 samples +1 byte id.
-// //uint8_t bufferB[756];
-// uint8_t spiBacklog = 0;
 
-// CircularBuffer nodeABuff = CircularBuffer(240,4);
+CommandHandler cmdHandler = CommandHandler();
 
 //Setup the input and output pins.
 int buttonPin = D5;
@@ -43,7 +36,7 @@ GatewayBLE BleStack;
 char buf[6] = "hello";
 char spiSendBuf[32] = "SPI transmission - dummy data";
 
-const size_t READ_BUF_SIZE = 33;
+const size_t READ_BUF_SIZE = 255;
 char readBuf[READ_BUF_SIZE];
 size_t readBufOffset = 0;
 int64_t t = 0; 
@@ -86,6 +79,8 @@ void setup()
   pinMode(buttonPin,INPUT_PULLUP);
   pinMode(D7,OUTPUT);
   pinMode(D6,OUTPUT);
+  pinMode(D2,OUTPUT);
+  pinMode(D3,OUTPUT);
 
   //UART
   Serial1.begin(115200, SERIAL_DATA_BITS_8 | SERIAL_STOP_BITS_1 | SERIAL_PARITY_NO); 
@@ -117,28 +112,29 @@ void loop()
 
   if (Serial1.available())
   {
-    if (readBufOffset < READ_BUF_SIZE)
-    {
-      char c = Serial1.read();
-      if (c != '\n')
-      {
+    cmdHandler.getChar();
+    // if (readBufOffset < READ_BUF_SIZE)
+    // {
+    //   char c = Serial1.read();
+    //   if (c != '\n')
+    //   {
         
-        readBuf[readBufOffset++] = c;
+    //     readBuf[readBufOffset++] = c;
         
-      }
-      else
-      {
-        readBuf[readBufOffset] = 0;
-        processBuffer();
-        readBufOffset = 0;
-        Serial1.printlnf("%s", buf);
-      }
-    }
-    else
-    {
-      Serial.println("readBuf overflow, emptying buffer");
-      readBufOffset = 0;
-    }
+    //   }
+    //   else
+    //   {
+    //     readBuf[readBufOffset] = 0;
+    //     processBuffer();
+    //     readBufOffset = 0;
+    //     Serial1.printlnf("%s", buf);
+    //   }
+    // }
+    // else
+    // {
+    //   Serial.println("readBuf overflow, emptying buffer");
+    //   readBufOffset = 0;
+    // }
   }
 
   
@@ -158,11 +154,16 @@ void loop()
 
   uint8_t packets= 0;
   if( (packets =BleStack.dataAvailable(0)) && (digitalRead(HANDSHAKE)) && (!spiBusy)){
-    digitalWrite(D6,HIGH);
+
+    digitalWrite(D6,HIGH); //For debugging
+    
     Log.info("ready to send 1 of %d over SPI for node A.",packets);
+    
     uint8_t* location = BleStack.getReadPtr(0);
     memcpy(spi_buff,location,BLE_RX_DATA_SIZE);
+    
     spi_buff[240] = 0;//Last byte indicate this data is from node 0.
+
     spiBusy = true;
     digitalWrite(CS, LOW);
     SPI.transfer(spi_buff,NULL,241,spiDoneHandler);//This version of spi.transfer uses dma.
@@ -185,36 +186,36 @@ void loop()
   delayMicroseconds(100);
 }
 
-void processBuffer() {
+// void processBuffer() {
 
-  String data = "";
-  int accel = 5; //random
-  bool result = false;
-  data = String::format(
-      "{\"station_a\":\"A\", \"station_b\":\"B\", \"accel\":%d}", readBuf[0]);
-  if (Particle.connected()) {
-    Log.trace("Publishing Data");
-    Log.trace(data);
-    result = Particle.publish("sampleData", data, PRIVATE);
+//   String data = "";
+//   int accel = 5; //random
+//   bool result = false;
+//   data = String::format(
+//       "{\"station_a\":\"A\", \"station_b\":\"B\", \"accel\":%d}", readBuf[0]);
+//   if (Particle.connected()) {
+//     Log.trace("Publishing Data");
+//     Log.trace(data);
+//     result = Particle.publish("sampleData", data, PRIVATE);
     
-  }
-  Log.trace("Publish successfull: %d",result);
-    // Serial.print("Received from Arduino: ");
-    // for (int i=0; i<sizeof(readBuf); i++){
-    //   Serial.print(readBuf[i]);
-    // }
-    // Serial.print("\n");
-}
+//   }
+//   Log.trace("Publish successfull: %d",result);
+//     // Serial.print("Received from Arduino: ");
+//     // for (int i=0; i<sizeof(readBuf); i++){
+//     //   Serial.print(readBuf[i]);
+//     // }
+//     // Serial.print("\n");
+// }
 
-void publishData(){
-  String data = "";
-  int accel = 5; //random
-  data = String::format(
-      "{\"station_a\":\"A\", \"station_b\":\"B\", \"accel\":%d}", accel);
-  Log.trace("Publishing Data");
-  Log.trace(data);
-  Particle.publish("sampleData", data, PRIVATE);
-}
+// void publishData(){
+//   String data = "";
+//   int accel = 5; //random
+//   data = String::format(
+//       "{\"station_a\":\"A\", \"station_b\":\"B\", \"accel\":%d}", accel);
+//   Log.trace("Publishing Data");
+//   Log.trace(data);
+//   Particle.publish("sampleData", data, PRIVATE);
+// }
 
 void spiDoneHandler(){
   digitalWrite(CS,HIGH);
