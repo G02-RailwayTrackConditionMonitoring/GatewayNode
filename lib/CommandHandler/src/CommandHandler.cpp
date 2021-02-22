@@ -54,7 +54,7 @@ void CommandHandler::handleCommand(){
                                 Log.info("Published data: %d",sucess);
                                 }
                                 else{
-                                    Log.warn("LTE not connected for publihs, transmission skipped.");
+                                    Log.warn("LTE not connected for publish, transmission skipped.");
                                 }
                                 break;
 

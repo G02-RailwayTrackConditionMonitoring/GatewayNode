@@ -1,4 +1,5 @@
 #include  <GatewayBLE.h>
+#include "GatewayCommands.h"
 
 #define MOSI D12
 #define MISO D11
@@ -26,7 +27,7 @@ GatewayBLE::GatewayBLE(){
 
     //Register all the callbacks.
     BLE.onDisconnected(GatewayBLE::disconnectCallback,this);
-    //BLE.onConnected(GatewayBLE::connectedCallback,this);  //We are not using this yet.
+    //BLE.onConnected(GatewayBLE::connectedCallback,this);  Doesn't work for central devices:(
 
     dataStream.onDataReceived(bleRxDataCallback,this);
     telemetryStream.onDataReceived(bleRxTelemetryCallback,this);
@@ -236,27 +237,7 @@ void GatewayBLE::bleRxDataCallback(const uint8_t* data, size_t len, const BlePee
     gatewayBLE->rxCount ++;
     digitalWrite(D7,LOW);
 
-    // if(digitalRead(HANDSHAKE)){
-    // digitalWrite(CS, LOW);
-    // SPI.transfer(gatewayBLE->rxBuffers[id], NULL, len, NULL);
-    // digitalWrite(CS, HIGH);
-    
-    
-//   }
 
-    // //Make sure the main loop isn't acessing the memory.
-    // os_mutex_lock(gatewayBLE->rxBufferLocks[id]);
-    // //We should probably try the lock first(os_thread_trylock), and write to backup buffer if not available, because we don't want to be blocking in this callback.
-    
-    // if(gatewayBLE->rxBufferIndices[id] !=0){
-    //     //The data hasn't been read yet, so we are gonna be overwriting :(
-    //     gatewayBLE->rxBufferOverwrite[id] = true;
-    // }
-
-    // gatewayBLE->rxBufferIndices[id] = len;
-    // memcpy(gatewayBLE->rxBuffers[id],data,len);
-
-    // os_mutex_unlock(gatewayBLE->rxBufferLocks[id]);      
 
 }
 
@@ -280,13 +261,32 @@ void GatewayBLE::disconnectCallback(const BlePeerDevice& peer, void* context){
 
             gatewayBLE->connectedNodes.erase(gatewayBLE->connectedNodes.begin()+i);
             gatewayBLE->numConnections--;
+
+            GatewayUartPacket packet;
+            packet.command = BLE_CONNECTION_EVENT;
+            packet.len = 3;
+
+            packet.data.uint8[0] =0; //This is a disconnection(10), not a connection(1).
+            packet.data.uint8[1] =i;
+    
+            uint8_t uartBuf[4];
+            uint8_t bytesToSend=0;
+
+            bytesToSend = PreparePacket(uartBuf,&packet);
+            Serial1.write(uartBuf,bytesToSend);
         }
     }
 
 }
 
 
-void GatewayBLE::connectedCallback(const BlePeerDevice& peer, void* context){}
+void GatewayBLE::connectedCallback(const BlePeerDevice& peer, void* context){
+
+    GatewayBLE * gatewayBLE = (GatewayBLE *) context;
+    int8_t id = gatewayBLE->getDeviceIndex(peer);
+
+
+}
 
 void GatewayBLE::scanResultCallback(const BleScanResult *scanResult, void *context){
     

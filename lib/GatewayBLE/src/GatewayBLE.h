@@ -64,6 +64,9 @@ class GatewayBLE{
 
         uint8_t * getReadPtr(uint8_t nodeId);
 
+        //Returns the device id (index) based on the name. G02_A is 0, G02_B is 1, etc.
+        uint8_t getDeviceId(String name);
+
         std::vector<bleConnection_t> connectedNodes;  //Handle for the BLE connections.
         uint8_t numConnections;
 
@@ -106,8 +109,7 @@ class GatewayBLE{
         //Returns the index of the device with the connection handle "peer". This is with repspect to the connectedDevices array.
         int8_t getDeviceIndex(const BlePeerDevice& peer);
 
-        //Returns the device id (index) based on the name. G02_A is 0, G02_B is 1, etc.
-        uint8_t getDeviceId(String name);
+        
 
         //Callbacks 
         //These are called on the BLE stack, so don't do long operations (delay,etc) or use tons of memory.
