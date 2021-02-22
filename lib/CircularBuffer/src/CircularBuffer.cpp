@@ -45,7 +45,7 @@
     uint8_t* CircularBuffer::getReadPtr(){
 
         //Buffer is empty.
-        if(readIdx == writeIdx) return NULL;
+        if(readIdx == writeIdx && !full) return NULL;
 
         uint8_t temp = readIdx;
         readIdx= (readIdx+1)%maxNumItems;
