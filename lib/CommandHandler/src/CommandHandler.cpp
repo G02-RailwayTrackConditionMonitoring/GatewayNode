@@ -9,43 +9,44 @@ CommandHandler::CommandHandler(){
 
 void CommandHandler::getChar(){
 
-    char c = Serial1.read();
-
-    //First byte of a command
-    if(rxCount == 0){
-
-        uartRxBuffer[rxCount] = c;
-        rxCount++;
+     if (readBufOffset < UART_BUFFER_SIZE)
+    {
+      char c = Serial1.read();
+      if (c != '\n')
+      {
+        
+        readBuf[readBufOffset++] = c;
+        
+      }
+      else
+      {
+        readBuf[readBufOffset] = 0;
+        handleCommand(readBuf);
+        readBufOffset = 0;
+        //Serial1.printlnf("%s", buf);
+      }
     }
-    else if(rxCount == 1){
-    //This is always the len byte.
-        rxLen = c;
-        uartRxBuffer[rxCount] = c;
-        rxCount++;
+    else
+    {
+      Serial.println("readBuf overflow, emptying buffer");
+      readBufOffset = 0;
     }
-    else{
-        uartRxBuffer[rxCount] = c;
-        rxCount++;
-    }
-
-    //If count = len  then we have a full command.
-    //If rxCount is 0 or 1 we don't have a valid length yet.
-    if((rxCount >= rxLen) && rxCount>1){
-        rxCount = 0;
-        rxLen = 0;
-        handleCommand();
-    }
+  
+    
 }
 
-void CommandHandler::handleCommand(){
+void CommandHandler::handleCommand(char* cmdString){
 
-    GatewayUartPacket packet;
+    char * cmd = strtok(cmdString,":");
+    char* data = strtok(NULL,":");
 
-    GetPacket(uartRxBuffer,&packet);
+    uint8_t cmdNum = atoi(cmd);
+
+    
     digitalWrite(D2,HIGH);
-    switch(packet.command){
+    switch(cmdNum){
 
-        case AVG_FORCE_DATA:    snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"FORCE: %d\n",packet.data.int16[0]);
+        case AVG_FORCE_DATA:    snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"FORCE: %s\n",data);
                                 Log.info("UART CMD: %s",publishBuffer);
                                 if(Particle.connected()){
 
@@ -58,7 +59,7 @@ void CommandHandler::handleCommand(){
                                 }
                                 break;
 
-        default:                Log.warn("Invalid command received: %d",packet.command);
+        default:                Log.warn("Invalid command received: %d",cmdNum);
                                 break;
 
     }

@@ -261,19 +261,9 @@ void GatewayBLE::disconnectCallback(const BlePeerDevice& peer, void* context){
 
             gatewayBLE->connectedNodes.erase(gatewayBLE->connectedNodes.begin()+i);
             gatewayBLE->numConnections--;
-
-            GatewayUartPacket packet;
-            packet.command = BLE_CONNECTION_EVENT;
-            packet.len = 3;
-
-            packet.data.uint8[0] =0; //This is a disconnection(10), not a connection(1).
-            packet.data.uint8[1] =i;
-    
-            uint8_t uartBuf[4];
-            uint8_t bytesToSend=0;
-
-            bytesToSend = PreparePacket(uartBuf,&packet);
-            Serial1.write(uartBuf,bytesToSend);
+            char buf[255];
+            sprintf(buf,"%d: %d,%d\n",BLE_CONNECTION_EVENT,0,i);
+            Serial1.printf(buf);
         }
     }
 

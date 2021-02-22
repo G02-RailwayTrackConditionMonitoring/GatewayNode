@@ -38,9 +38,7 @@ GatewayBLE BleStack;
 char buf[6] = "hello";
 char spiSendBuf[32] = "SPI transmission - dummy data";
 
-const size_t READ_BUF_SIZE = 255;
-char readBuf[READ_BUF_SIZE];
-size_t readBufOffset = 0;
+
 int64_t t = 0; 
 
 volatile bool spiBusy = false;
@@ -112,37 +110,19 @@ void setup()
   //Wait until were connected then log some info.
   if(Time.isValid()){
           Log.info("Sending uart command to update time.");
-          GatewayUartPacket packet;
-          packet.command = TIME_UPDATE;
-          packet.len = 5;
 
-          packet.data.uint8[0] =Time.month(); 
-          packet.data.uint8[1] =Time.day();
-          packet.data.uint8[2] =Time.hour();
-          packet.data.uint8[3] =Time.minute();
-          packet.data.uint8[4] = Time.second();
-          
-          uint8_t uartBuf[7];
-          uint8_t bytesToSend=0;
+          char buf[255];
+          sprintf(buf,"%d: %d/%d/ %dh %dm %ds\n",TIME_UPDATE,Time.month(),Time.day(),Time.hour(),Time.minute(),Time.second());
 
-          bytesToSend = PreparePacket(uartBuf,&packet);
-          Serial1.write(uartBuf,bytesToSend);
-
+          Serial1.printf(buf);
         }
 
-        GatewayUartPacket packet;
-        packet.command = LTE_RSSI_DATA;
-        packet.len = sizeof(float);
-
-        CellularSignal sig = Cellular.RSSI();
-        float quality = sig.getQuality(); //Percentage 0 to 100.
-        
-        packet.data.float32[0] = quality;
-        uint8_t uartBuf[packet.len+2];
-        uint8_t bytesToSend=0;
-
-        bytesToSend = PreparePacket(uartBuf,&packet);
-        Serial1.write(uartBuf,bytesToSend);
+  CellularSignal sig = Cellular.RSSI();
+  float quality = sig.getQuality(); //Percentage 0 to 100.
+    
+  char buf[255];
+  sprintf(buf,"%d:%3.1f\n",LTE_RSSI_DATA,quality);     
+  Serial1.printf(buf);
 
   BleStack.startBLE();
 
@@ -153,19 +133,11 @@ void setup()
       BleStack.scanBLE();
       uint8_t numCon = BleStack.connectBLE();
       delay(200);
+      char buf[255];
       for(int i=0; i<numCon;i++){
-        GatewayUartPacket packet;
-        packet.command = BLE_CONNECTION_EVENT;
-        packet.len = 3;
-
-        packet.data.uint8[0] =1; //This is a connection(1), not a disconnection(0).
-        packet.data.uint8[1] =i;
         
-        uint8_t uartBuf[4];
-        uint8_t bytesToSend=0;
-
-        bytesToSend = PreparePacket(uartBuf,&packet);
-        Serial1.write(uartBuf,bytesToSend);
+        sprintf(buf,"%d: %d,%d\n",BLE_CONNECTION_EVENT,1,i);
+        Serial1.printf(buf);
       }
   }
 }
@@ -183,9 +155,13 @@ void loop()
   //Try and reconnect BLE if lost.
   if(BleStack.numConnections<NUM_BLE_NODES){
     BleStack.scanBLE();
-    BleStack.connectBLE();
+   uint8_t numCon = BleStack.connectBLE();
+    for(int i=0; i<numCon;i++){
+      char buf[255];
+       sprintf(buf,"%d: %d,%d\n",BLE_CONNECTION_EVENT,1,i);
+        Serial1.printf(buf);
   }
-
+  }
 
   //Handle uart commands
   if (Serial1.available())

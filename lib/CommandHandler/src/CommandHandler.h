@@ -7,6 +7,7 @@
 #define PUBLISH_BUFFER_SIZE 255
 #define UART_BUFFER_SIZE    255
 
+
 class CommandHandler{
 
     public:
@@ -18,13 +19,12 @@ class CommandHandler{
     private:
 
         char publishBuffer[PUBLISH_BUFFER_SIZE];
-        uint8_t uartRxBuffer[UART_BUFFER_SIZE];
-        uint8_t uartTxBuffer[UART_BUFFER_SIZE];
 
-        uint16_t rxCount=0;
-        uint16_t rxLen=0;
+        
+        char readBuf[UART_BUFFER_SIZE];
+        size_t readBufOffset = 0;
 
-        void handleCommand();
+        void handleCommand(char* cmdString);
 
 };
 
