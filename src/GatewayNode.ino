@@ -17,7 +17,7 @@ SerialLogHandler logHandler(LOG_LEVEL_ALL, {{"app", LOG_LEVEL_ALL}});
 
 // #define GCP
 
- uint8_t spi_buff[241]; //Hold 40 samples +1 byte id.
+ uint8_t spi_buff[245]; //Hold 40 samples +1 byte id.+ 4 byte frame num
 
 CommandHandler cmdHandler = CommandHandler();
 
@@ -180,11 +180,11 @@ void loop()
     uint8_t* location = BleStack.getReadPtr(0);
     memcpy(spi_buff,location,BLE_RX_DATA_SIZE);
     
-    spi_buff[240] = 0;//Last byte indicate this data is from node 0.
+    spi_buff[244] = 0;//Last byte indicate this data is from node 0.
 
     spiBusy = true;
     digitalWrite(CS, LOW);
-    SPI.transfer(spi_buff,NULL,241,spiDoneHandler);//This version of spi.transfer uses dma.
+    SPI.transfer(spi_buff,NULL,245,spiDoneHandler);//This version of spi.transfer uses dma.
     digitalWrite(D6,LOW);
   }
 
