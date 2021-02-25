@@ -39,6 +39,9 @@ void CommandHandler::handleCommand(char* cmdString){
 
     char * cmd = strtok(cmdString,":");
     char* data = strtok(NULL,":");
+    // call GeoLocator get GPS
+    // get GPS triggers a cloud task 
+    // 
 
     uint8_t cmdNum = atoi(cmd);
     Log.info("\n******************\n");

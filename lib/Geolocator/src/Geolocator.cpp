@@ -2,7 +2,7 @@
 #include "Geolocator.h"
 
 #if Wiring_Cellular
-#include "CellularHelper.h"
+# include "CellularHelper.h"
 #endif
 
 static char requestBuf[256];
@@ -47,6 +47,15 @@ GoogleMapsDeviceLocator &GoogleMapsDeviceLocator::withSubscribe(GoogleMapsDevice
 	return *this;
 }
 
+GoogleMapsDeviceLocator &GoogleMapsDeviceLocator::withOperator(const char *oper, int mcc, int mnc) {
+	this->oper = oper;
+	this->mcc = mcc;
+	this->mnc = mnc;
+	return *this;
+}
+
+
+
 void GoogleMapsDeviceLocator::loop() {
 	switch(state) {
 	case CONNECT_WAIT_STATE:
@@ -66,7 +75,8 @@ void GoogleMapsDeviceLocator::loop() {
 			}
 			else
 			if (locatorMode == LOCATOR_MODE_MANUAL) {
-				state = IDLE_STATE;
+				//state = IDLE_STATE;
+				state = CONNECTED_STATE;
 			}
 			else {
 				state = CONNECTED_STATE;
@@ -157,16 +167,13 @@ void GoogleMapsDeviceLocator::subscriptionHandler(const char *event, const char 
 static void wifiScanCallback(WiFiAccessPoint* wap, void* data) {
 	// The - 3 factor here to leave room for the closing JSON array ] object }} and the trailing null
 	size_t spaceLeft = &requestBuf[sizeof(requestBuf) - 3] - requestCur;
-	if (spaceLeft < 30) {
-		return;
-	}
 
-	int sizeNeeded = snprintf(requestCur, spaceLeft,
+	size_t sizeNeeded = snprintf(requestCur, spaceLeft,
 			"%s{\"m\":\"%02x:%02x:%02x:%02x:%02x:%02x\",\"s\":%d,\"c\":%d}",
 			(requestCur[-1] == '[' ? "" : ","),
 			wap->bssid[0], wap->bssid[1], wap->bssid[2], wap->bssid[3], wap->bssid[4], wap->bssid[5],
 			wap->rssi, wap->channel);
-	if (sizeNeeded > 0 && sizeNeeded < (int)spaceLeft) {
+	if (sizeNeeded <= spaceLeft) {
 		// There is enough space to store the whole entry, so save it
 		requestCur += sizeNeeded;
 		numAdded++;
@@ -205,12 +212,12 @@ static void cellularAddTower(const CellularHelperEnvironmentCellData *cellData) 
 	// The - 4 factor here to leave room for the closing JSON array ], object }}, and the trailing null
 	size_t spaceLeft = &requestBuf[sizeof(requestBuf) - 4] - requestCur;
 
-	int sizeNeeded = snprintf(requestCur, spaceLeft,
+	size_t sizeNeeded = snprintf(requestCur, spaceLeft,
 			"%s{\"i\":%d,\"l\":%u,\"c\":%d,\"n\":%d}",
 			(requestCur[-1] == '[' ? "" : ","),
 			cellData->ci, cellData->lac, cellData->mcc, cellData->mnc);
 
-	if (sizeNeeded > 0 && sizeNeeded < (int)spaceLeft && cellData->lac != 0 && cellData->lac != 65535 && cellData->mcc != 65535 && cellData->mnc != 65535) {
+	if (sizeNeeded <= spaceLeft && cellData->lac != 0 && cellData->lac != 65535 && cellData->mcc != 65535 && cellData->mnc != 65535) {
 		// There is enough space to store the whole entry, so save it
 		requestCur += sizeNeeded;
 		numAdded++;
@@ -218,7 +225,110 @@ static void cellularAddTower(const CellularHelperEnvironmentCellData *cellData) 
 
 }
 
+#if HAS_CELLULAR_GLOBAL_IDENTITY
+const char *GoogleMapsDeviceLocator::cellularScanCGI() {
+
+	*requestCur = 0;
+
+	// getOperatorName (AT+UDOPN) is not supported on LTE (SARA-R410M-02-B) but the function
+	// will return an empty string which is fine.
+	String oper = CellularHelper.getOperatorName();
+
+	CellularGlobalIdentity cgi = {0};
+	cgi.size = sizeof(CellularGlobalIdentity);
+	cgi.version = CGI_VERSION_LATEST;
+
+	cellular_result_t res = cellular_global_identity(&cgi, NULL);
+	if (res == SYSTEM_ERROR_NONE) {
+		// We know these things fit, so just using sprintf instead of snprintf here
+		requestCur += sprintf(requestCur, "{\"c\":{\"o\":\"%s\",", oper.c_str());
+
+		requestCur += sprintf(requestCur, "\"a\":[");
+
+		requestCur += sprintf(requestCur,
+					"{\"i\":%lu,\"l\":%u,\"c\":%u,\"n\":%u}",
+					cgi.cell_id, cgi.location_area_code, cgi.mobile_country_code, cgi.mobile_network_code);
+
+		numAdded++;
+
+		*requestCur++ = ']';
+		*requestCur++ = '}';
+		*requestCur++ = '}';
+		*requestCur++ = 0;
+	}
+	else {
+		// Serial.printlnf("cellular_global_identity failed %d", res);
+	}
+
+	return requestBuf;
+}
+#endif /* HAS_CELLULAR_GLOBAL_IDENTITY */
+
+// This is only useful on the Electron and E Series LTE before Device OS 1.2.1.
+// It does not work on the Boron LTE. The cellular global identity (CGI) version
+// is better, and this will eventually be deprecated.
+const char *GoogleMapsDeviceLocator::cellularScanLTE() {
+
+	CellularHelperCREGResponse resp;
+	CellularHelper.getCREG(resp);
+
+	// Serial.println(resp.toString().c_str());
+
+	// We know these things fit, so just using sprintf instead of snprintf here
+	requestCur += sprintf(requestCur, "{\"c\":{\"o\":\"%s\",", oper.c_str());
+
+	requestCur += sprintf(requestCur, "\"a\":[");
+
+	if (resp.valid) {
+		requestCur += sprintf(requestCur,
+					"{\"i\":%d,\"l\":%u,\"c\":%d,\"n\":%d}",
+					resp.ci, resp.lac, mcc, mnc);
+
+		numAdded++;
+	}
+
+	*requestCur++ = ']';
+	*requestCur++ = '}';
+	*requestCur++ = '}';
+	*requestCur++ = 0;
+
+
+
+	if (numAdded == 0) {
+		requestBuf[0] = 0;
+	}
+
+	return requestBuf;
+}
+
+
 const char *GoogleMapsDeviceLocator::cellularScan() {
+
+	requestCur = requestBuf;
+	numAdded = 0;
+
+#if HAS_CELLULAR_GLOBAL_IDENTITY
+	{
+		static bool modelChecked = false;
+		static bool useCGI = false;
+
+		if (!modelChecked) {
+			modelChecked = true;
+
+			// Use Cellular Global Identity (CGI) on Device OS 1.2.1 and later
+			// if the modem is not a global 2G (G350). On the G350, AT+CGEG=5
+			// works so a better multi-tower result can be returned.
+			useCGI = !CellularHelper.getModel().startsWith("SARA-G350");
+		}
+		if (useCGI) {
+			return cellularScanCGI();
+		}
+	}
+#endif
+
+	if (CellularHelper.isLTE()) {
+		return cellularScanLTE();
+	}
 
 	// First try to get info on neighboring cells. This doesn't work for me using the U260
 	CellularHelperEnvironmentResponseStatic<4> envResp;
@@ -231,9 +341,6 @@ const char *GoogleMapsDeviceLocator::cellularScan() {
 	}
 	// envResp.serialDebug();
 
-
-	requestCur = requestBuf;
-	numAdded = 0;
 
 	// We know these things fit, so just using sprintf instead of snprintf here
 	requestCur += sprintf(requestCur, "{\"c\":{\"o\":\"%s\",",
@@ -261,8 +368,3 @@ const char *GoogleMapsDeviceLocator::cellularScan() {
 
 
 #endif /* Wiring_Cellular */
-
-
-
-
-
