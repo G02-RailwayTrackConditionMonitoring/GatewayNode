@@ -1100,10 +1100,11 @@ bool CellularHelperClass::selectOperator(const char *mccMnc) const {
 
 
 void CellularHelperClass::getEnvironment(int mode, CellularHelperEnvironmentResponse &resp) const {
-	resp.command = "CGED";
-	// resp.enableDebug = true;
+	resp.command = "UCGED";
+	resp.enableDebug = true;
 
-	resp.resp = Cellular.command(responseCallback, (void *)&resp, DEFAULT_TIMEOUT, "AT+CGED=%d\r\n", mode);
+	resp.resp = Cellular.command(responseCallback, (void *)&resp, DEFAULT_TIMEOUT, "+UCGED:%d\r\n", mode);
+	
 	
 }
 

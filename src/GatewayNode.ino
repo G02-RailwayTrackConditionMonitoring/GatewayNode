@@ -2,6 +2,8 @@
 #include "CircularBuffer.h"
 #include "CommandHandler.h"
 #include "GatewayCommands.h"
+#include "Geolocator.h"
+
 
 SYSTEM_THREAD(ENABLED);
 
@@ -44,9 +46,12 @@ int64_t t = 0;
 volatile bool spiBusy = false;
 void spiDoneHandler();
 void connectLTE();
-
+void locationCallback(float lat, float lon, float accuracy);
+GoogleMapsDeviceLocator locator;// = GoogleMapsDeviceLocator();
 void setup()
 {
+  
+  
 
 
   #ifdef DEBUG
@@ -95,7 +100,7 @@ void setup()
     {
       
       Log.info("Connected to the Particle Cloud.");
-
+      locator.withSubscribe(locationCallback).withLocatePeriodic(120); 
       
     }
     else
@@ -107,86 +112,82 @@ void setup()
   #endif
 
   
-  //Wait until were connected then log some info.
-  if(Time.isValid()){
-          Log.info("Sending uart command to update time.");
+  // //Wait until were connected then log some info.
+  // if(Time.isValid()){
+  //         Log.info("Sending uart command to update time.");
 
-          char buf[255];
-          sprintf(buf,"%d: %d/%d/ %dh %dm %ds\n",TIME_UPDATE,Time.month(),Time.day(),Time.hour(),Time.minute(),Time.second());
+  //         char buf[255];
+  //         sprintf(buf,"%d: %d/%d/ %dh %dm %ds\n",TIME_UPDATE,Time.month(),Time.day(),Time.hour(),Time.minute(),Time.second());
 
-          Serial1.printf(buf);
-        }
+  //         Serial1.printf(buf);
+  //       }
 
-  CellularSignal sig = Cellular.RSSI();
-  float quality = sig.getQuality(); //Percentage 0 to 100.
+  // CellularSignal sig = Cellular.RSSI();
+  // float quality = sig.getQuality(); //Percentage 0 to 100.
     
-  char buf[255];
-  sprintf(buf,"%d:%3.1f\n",LTE_RSSI_DATA,quality);     
-  Serial1.printf(buf);
+  // char buf[255];
+  // sprintf(buf,"%d:%3.1f\n",LTE_RSSI_DATA,quality);     
+  // Serial1.printf(buf);
 
-  BleStack.startBLE();
+  // BleStack.startBLE();
 
   
-  //Auto connect
-  while(BleStack.numConnections<NUM_BLE_NODES){
+  // //Auto connect
+  // while(BleStack.numConnections<NUM_BLE_NODES){
       
-      BleStack.scanBLE();
-      uint8_t numCon = BleStack.connectBLE();
-      delay(200);
-      char buf[255];
-      for(int i=0; i<numCon;i++){
+  //     BleStack.scanBLE();
+  //     uint8_t numCon = BleStack.connectBLE();
+  //     delay(200);
+  //     char buf[255];
+  //     for(int i=0; i<numCon;i++){
         
-        sprintf(buf,"%d: %d,%d\n",BLE_CONNECTION_EVENT,1,i);
-        Serial1.printf(buf);
-      }
-  }
+  //       sprintf(buf,"%d: %d,%d\n",BLE_CONNECTION_EVENT,1,i);
+  //       Serial1.printf(buf);
+  //     }
+  // }
 }
 
 
 void loop()
 {
-  // The core of your code will likely live here.
-  // if(digitalRead(buttonPin) == LOW){
 
-  //     BleStack.scanBLE();
-  //     BleStack.connectBLE();
+  locator.loop();
+
+  // //Try and reconnect BLE if lost.
+  // if(BleStack.numConnections<NUM_BLE_NODES){
+  //   BleStack.scanBLE();
+  //  uint8_t numCon = BleStack.connectBLE();
+  //   for(int i=0; i<numCon;i++){
+  //     char buf[255];
+  //      sprintf(buf,"%d: %d,%d\n",BLE_CONNECTION_EVENT,1,i);
+  //       Serial1.printf(buf);
+  // }
   // }
 
-  //Try and reconnect BLE if lost.
-  if(BleStack.numConnections<NUM_BLE_NODES){
-    BleStack.scanBLE();
-   uint8_t numCon = BleStack.connectBLE();
-    for(int i=0; i<numCon;i++){
-      char buf[255];
-       sprintf(buf,"%d: %d,%d\n",BLE_CONNECTION_EVENT,1,i);
-        Serial1.printf(buf);
-  }
-  }
+  // //Handle uart commands
+  // if (Serial1.available())
+  // {
+  //   cmdHandler.getChar();
+  // }
 
-  //Handle uart commands
-  if (Serial1.available())
-  {
-    cmdHandler.getChar();
-  }
+  // //Handle BLE data and send over SPI.
+  // uint8_t packets= 0;
+  // if( (packets =BleStack.dataAvailable(0)) && (digitalRead(HANDSHAKE)) && (!spiBusy)){
 
-  //Handle BLE data and send over SPI.
-  uint8_t packets= 0;
-  if( (packets =BleStack.dataAvailable(0)) && (digitalRead(HANDSHAKE)) && (!spiBusy)){
-
-    digitalWrite(D6,HIGH); //For debugging
+  //   digitalWrite(D6,HIGH); //For debugging
     
-    //Log.info("ready to send 1 of %d over SPI for node A.",packets);
+  //   //Log.info("ready to send 1 of %d over SPI for node A.",packets);
     
-    uint8_t* location = BleStack.getReadPtr(0);
-    memcpy(spi_buff,location,BLE_RX_DATA_SIZE);
+  //   uint8_t* location = BleStack.getReadPtr(0);
+  //   memcpy(spi_buff,location,BLE_RX_DATA_SIZE);
     
-    spi_buff[244] = 0;//Last byte indicate this data is from node 0.
+  //   spi_buff[244] = 0;//Last byte indicate this data is from node 0.
 
-    spiBusy = true;
-    digitalWrite(CS, LOW);
-    SPI.transfer(spi_buff,NULL,245,spiDoneHandler);//This version of spi.transfer uses dma.
-    digitalWrite(D6,LOW);
-  }
+  //   spiBusy = true;
+  //   digitalWrite(CS, LOW);
+  //   SPI.transfer(spi_buff,NULL,245,spiDoneHandler);//This version of spi.transfer uses dma.
+  //   digitalWrite(D6,LOW);
+  // }
 
 
  //It can take around 20 us for handshake  to go low after spi transaction, 
@@ -229,4 +230,7 @@ void loop()
 void spiDoneHandler(){
   digitalWrite(CS,HIGH);
   spiBusy = false;
+}
+void locationCallback(float lat, float lon, float accuracy){
+  Serial.printlnf("lat: %f, lng: %f, acc: %f", lat, lon, accuracy);
 }

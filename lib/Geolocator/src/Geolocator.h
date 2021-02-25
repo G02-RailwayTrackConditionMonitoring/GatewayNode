@@ -4,6 +4,12 @@
 
 #include "Particle.h"
 
+#if defined(SYSTEM_VERSION_v121) && defined(Wiring_Cellular)
+#define HAS_CELLULAR_GLOBAL_IDENTITY 1
+#else
+#define HAS_CELLULAR_GLOBAL_IDENTITY 0
+#endif
+
 /**
  * This is the callback function prototype for the callback if you use the
  * withSubscribe() method to be notified of your own location.
@@ -51,6 +57,18 @@ public:
 	GoogleMapsDeviceLocator &withSubscribe(GoogleMapsDeviceLocatorSubscriptionCallback callback);
 
 	/**
+	 * Deprecated. No longer needed in Device OS 1.2.1 and later.
+	 *
+	 * Use this method to set the operator, mcc, and mnc when using LTE in Device OS prior to 1.2.1.
+	 * This does not work on the Boron LTE.
+	 *
+	 * The SARA-R410M-02B cannot get this information using AT+UCGED, so you need to pass it in
+	 * manually. Fortunately, in the United States with the Particle SIM it's always
+	 * "AT&T", 310, 410.
+	 */
+	GoogleMapsDeviceLocator &withOperator(const char *oper, int mcc, int mnc);
+
+	/**
 	 * You should call this from loop() to give the code time to process things in the background.
 	 * This is really only needed if you use withLocateOnce() or withLocatePeriodic() but it doesn't
 	 * hurt to call it always from loop. It executes quickly.
@@ -76,7 +94,12 @@ protected:
 	const char *wifiScan();
 #endif
 
+#if HAS_CELLULAR_GLOBAL_IDENTITY
+	const char *cellularScanCGI();
+#endif
+
 #if Wiring_Cellular
+	const char *cellularScanLTE();
 	const char *cellularScan();
 #endif
 
@@ -96,7 +119,9 @@ protected:
 	int state;
 	GoogleMapsDeviceLocatorSubscriptionCallback callback;
 	unsigned long waitAfterConnect;
+	String oper = "AT&T"; // Used for LTE (SARA-R410M-02B only)
+	int mcc = 310; // LTE
+	int mnc = 410; // LTE
 };
 
 #endif /* __GOOGLEMAPSDEVICELOCATOR_H */
-
