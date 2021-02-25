@@ -15,7 +15,7 @@ SYSTEM_MODE(SEMI_AUTOMATIC);
 SerialLogHandler logHandler(LOG_LEVEL_ALL, {{"app", LOG_LEVEL_ALL}});
 
 
-// #define GCP
+#define GCP
 
  uint8_t spi_buff[245]; //Hold 40 samples +1 byte id.+ 4 byte frame num
 
@@ -37,6 +37,7 @@ GatewayBLE BleStack;
 #define HANDSHAKE A4
 char buf[6] = "hello";
 char spiSendBuf[32] = "SPI transmission - dummy data";
+
 
 
 int64_t t = 0; 
@@ -106,7 +107,8 @@ void setup()
  
   #endif
 
-  
+  Particle.syncTime();
+
   //Wait until were connected then log some info.
   if(Time.isValid()){
           Log.info("Sending uart command to update time.");
@@ -138,6 +140,10 @@ void setup()
         
         sprintf(buf,"%d: %d,%d\n",BLE_CONNECTION_EVENT,1,i);
         Serial1.printf(buf);
+
+        if(Particle.connected()){
+          Particle.publish("data",buf,PRIVATE);
+        }
       }
   }
 }

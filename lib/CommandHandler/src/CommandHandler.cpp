@@ -2,6 +2,11 @@
 
 #include "GatewayCommands.h"
 #include <Particle.h>
+#include "PublishQueueAsyncRK.h"
+
+uint8_t publishQueueBuffer[2048];
+PublishQueueAsync publishQueue(publishQueueBuffer,sizeof(publishQueueBuffer));
+
 
 CommandHandler::CommandHandler(){
 
@@ -48,15 +53,15 @@ void CommandHandler::handleCommand(char* cmdString){
 
         case AVG_FORCE_DATA:    snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"FORCE: %s\n",data);
                                 Log.info("UART CMD: %s",publishBuffer);
-                                if(Particle.connected()){
+                                //if(Particle.connected()){
 
-                                bool sucess = Particle.publish("data", publishBuffer,PRIVATE);
+                               publishQueue.publish("data", publishBuffer,PRIVATE);
                                 //We should handle if the send fails or were not connected...
-                                Log.info("Published data: %d",sucess);
-                                }
-                                else{
-                                    Log.warn("LTE not connected for publish, transmission skipped.");
-                                }
+                                Log.info("Published data");
+                                //}
+                                //else{
+                                //    Log.warn("LTE not connected for publish, transmission skipped.");
+                                //}
                                 break;
 
         default:                Log.warn("Invalid command received: %d",cmdNum);
