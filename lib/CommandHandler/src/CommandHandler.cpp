@@ -92,7 +92,7 @@ void CommandHandler::handleCommand(char* cmdString){
                                 pubData = String::format(
                                     "{\"fg\":\"%s\", \"tg\":\"%s\", \"xyz\":\"%s\"}",fromGPS, toGPS, data);       
                                 Serial.println(pubData) ;
-                                snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"FORCE: %s\n",pubData);
+                                //snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"FORCE: %s\n",pubData);
                                 Log.info("UART CMD: %s",publishBuffer);
                                 Serial.printlnf("FROM GPS: %s", fromGPS);
                                 Serial.printlnf("TO GPS: %s", toGPS);
@@ -114,7 +114,9 @@ void CommandHandler::handleCommand(char* cmdString){
                                 // @joseph.. how ? 
                                 //set fromTime
                                 //set toTime
-                                break;                                
+                                break;  
+                                //case BATTERY_LEVEL(event = telemetry)
+                                //case SD_STORAGE (event = telemetry)                                                              
 
         default:                Log.warn("Invalid command received: %d",cmdNum);
                                 break;
