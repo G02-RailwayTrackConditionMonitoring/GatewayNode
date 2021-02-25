@@ -2,7 +2,7 @@
 #include "CircularBuffer.h"
 #include "CommandHandler.h"
 #include "GatewayCommands.h"
-
+#include "Geolocator.h"
 SYSTEM_THREAD(ENABLED);
 
 //#include "spark_wiring_ble.h"
@@ -20,6 +20,7 @@ SerialLogHandler logHandler(LOG_LEVEL_ALL, {{"app", LOG_LEVEL_ALL}});
  uint8_t spi_buff[245]; //Hold 40 samples +1 byte id.+ 4 byte frame num
 
 CommandHandler cmdHandler = CommandHandler();
+static char requestBuf[256];
 
 //Setup the input and output pins.
 int buttonPin = D5;
@@ -38,17 +39,21 @@ GatewayBLE BleStack;
 char buf[6] = "hello";
 char spiSendBuf[32] = "SPI transmission - dummy data";
 
-
+GoogleMapsDeviceLocator locator;// = GoogleMapsDeviceLocator();
 int64_t t = 0; 
 
 volatile bool spiBusy = false;
 void spiDoneHandler();
 void connectLTE();
+void handleDeviceLocator(const char *event, const char *data);
+void testing(const char *event, const char *data){
+  Serial.println("TESTING");
+}
 
 void setup()
 {
 
-
+  
   #ifdef DEBUG
   delay(3000);
   Log.info("This is a debug build.");
@@ -96,6 +101,7 @@ void setup()
       
       Log.info("Connected to the Particle Cloud.");
 
+
       
     }
     else
@@ -140,6 +146,10 @@ void setup()
         Serial1.printf(buf);
       }
   }
+    //snprintf(requestBuf, sizeof(requestBuf), "hook-response/%s/%s", "tcm-arm-device-locator", System.deviceID().c_str());
+
+    Particle.subscribe(requestBuf,handleDeviceLocator , MY_DEVICES);
+    Particle.subscribe("hook-response/tcm-arm-device-locator", testing, MY_DEVICES);
 }
 
 
@@ -229,4 +239,11 @@ void loop()
 void spiDoneHandler(){
   digitalWrite(CS,HIGH);
   spiBusy = false;
+}
+
+void handleDeviceLocator(const char *event, const char *data) {
+  //Serial.println("HANDLE DEVICE LOCATOR");
+  //Serial.printlnf("%s", data);
+  //Particle.publish("location", data, PRIVATE); 
+  cmdHandler.setGPS(data); 
 }

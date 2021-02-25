@@ -9,7 +9,7 @@ static char requestBuf[256];
 static char *requestCur;
 static int numAdded = 0;
 
-GoogleMapsDeviceLocator::GoogleMapsDeviceLocator() : locatorMode(LOCATOR_MODE_MANUAL), periodMs(10000), eventName("deviceLocator"),
+GoogleMapsDeviceLocator::GoogleMapsDeviceLocator() : locatorMode(LOCATOR_MODE_MANUAL), periodMs(10000), eventName("tcm-arm-device-locator"),
 	stateTime(0), state(CONNECT_WAIT_STATE), callback(NULL), waitAfterConnect(8000) {
 
 }
