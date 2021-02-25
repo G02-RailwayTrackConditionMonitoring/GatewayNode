@@ -41,8 +41,10 @@ void CommandHandler::handleCommand(char* cmdString){
     char* data = strtok(NULL,":");
 
     uint8_t cmdNum = atoi(cmd);
+    Log.info("\n******************\n");
+    Log.info("UART CMD: %s",data);
+    Log.info("\n******************\n");
 
-    
     digitalWrite(D2,HIGH);
     switch(cmdNum){
 

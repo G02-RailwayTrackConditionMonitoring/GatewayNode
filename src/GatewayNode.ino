@@ -15,7 +15,7 @@ SYSTEM_MODE(SEMI_AUTOMATIC);
 SerialLogHandler logHandler(LOG_LEVEL_ALL, {{"app", LOG_LEVEL_ALL}});
 
 
-// #define GCP
+#define GCP
 
  uint8_t spi_buff[245]; //Hold 40 samples +1 byte id.+ 4 byte frame num
 
@@ -32,7 +32,7 @@ GatewayBLE BleStack;
 
 #define MOSI D12
 #define MISO D11
-#define CS D14
+#define CS A5
 #define SCK D13
 #define HANDSHAKE A4
 char buf[6] = "hello";
@@ -175,7 +175,7 @@ void loop()
 
     digitalWrite(D6,HIGH); //For debugging
     
-    Log.info("ready to send 1 of %d over SPI for node A.",packets);
+    //Log.info("ready to send 1 of %d over SPI for node A.",packets);
     
     uint8_t* location = BleStack.getReadPtr(0);
     memcpy(spi_buff,location,BLE_RX_DATA_SIZE);
