@@ -95,7 +95,7 @@ int GatewayBLE::connectBLE(){
             Log.trace("Change ATT MTU: %d", result);
             hal_ble_conn_info_t conn_info;
             result = hal_ble_gap_get_connection_info(0, &conn_info, NULL);
-            Log.trace("get connection infor(0 for success) : %d",result);
+            Log.trace("get connection info(0 for success) : %d",result);
             Log.trace("Con att mtu: %d",conn_info.att_mtu);
             Log.trace("Con role: %d",conn_info.role);
             Log.trace("Con version: %d",conn_info.version);

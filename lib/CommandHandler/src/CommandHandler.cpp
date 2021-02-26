@@ -2,6 +2,11 @@
 
 #include "GatewayCommands.h"
 #include <Particle.h>
+#include "PublishQueueAsyncRK.h"
+
+uint8_t publishQueueBuffer[2048];
+PublishQueueAsync publishQueue(publishQueueBuffer,sizeof(publishQueueBuffer));
+
 
 
 CommandHandler::CommandHandler(){
@@ -25,6 +30,7 @@ void CommandHandler::getChar(){
      if (readBufOffset < UART_BUFFER_SIZE)
     {
       char c = Serial1.read();
+      //Log.info("uart: %c",c);
       if (c != '\n')
       {
         
@@ -76,8 +82,6 @@ void CommandHandler::handleCommand(char* cmdString){
     //locator.publishLocation();
     //Particle.publish("device-locator", data, PRIVATE);        
 
-      
-
     
 
     uint8_t cmdNum = atoi(cmd);
@@ -87,6 +91,7 @@ void CommandHandler::handleCommand(char* cmdString){
 
     digitalWrite(D2,HIGH);
     switch(cmdNum){
+
 
         case AVG_FORCE_DATA:    
                                 pubData = String::format(
@@ -103,13 +108,47 @@ void CommandHandler::handleCommand(char* cmdString){
                                 if(Particle.connected()){
 
                                 bool sucess = Particle.publish("data", pubData,PRIVATE);
+
                                 //We should handle if the send fails or were not connected...
-                                Log.info("Published data: %d",sucess);
-                                }
-                                else{
-                                    Log.warn("LTE not connected for publish, transmission skipped.");
-                                }
+                                Log.info("Published data");
+                                //}
+                                //else{
+                                //    Log.warn("LTE not connected for publish, transmission skipped.");
+                                //}
                                 break;
+                               }
+
+        case GATEWAY_BATTERY:   {
+
+                                float batterySoc = System.batteryCharge();
+                                
+                                snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"bl: %.1f\n",batterySoc);
+                                publishQueue.publish("telemetry",publishBuffer,PRIVATE);
+
+                                char buf[255];
+                                sprintf(buf,"%d: %.1f\n",GATEWAY_BATTERY,batterySoc);
+
+                                Serial1.printf(buf);
+                                break;
+                                }
+
+        case GATEWAY_BATTERY_REQ:{ float batterySoc = System.batteryCharge();
+                                
+                                char buf[255];
+                                sprintf(buf,"%d: %.1f\n",GATEWAY_BATTERY,batterySoc);
+
+                                Serial1.printf(buf);
+                                break;
+                                }
+
+        case GATEWAY_FREE_SPACE:{
+
+                                snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"fs:%s\n",data);
+                                publishQueue.publish("telemetry",publishBuffer,PRIVATE);
+                                break;
+
+                                }
+
         case SET_GPS:           locator.publishLocation();
                                 // @joseph.. how ? 
                                 //set fromTime

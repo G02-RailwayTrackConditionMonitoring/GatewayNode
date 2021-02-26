@@ -40,6 +40,7 @@ char buf[6] = "hello";
 char spiSendBuf[32] = "SPI transmission - dummy data";
 
 GoogleMapsDeviceLocator locator;// = GoogleMapsDeviceLocator();
+
 int64_t t = 0; 
 
 volatile bool spiBusy = false;
@@ -112,7 +113,8 @@ void setup()
  
   #endif
 
-  
+  Particle.syncTime();
+
   //Wait until were connected then log some info.
   if(Time.isValid()){
           Log.info("Sending uart command to update time.");
@@ -144,6 +146,10 @@ void setup()
         
         sprintf(buf,"%d: %d,%d\n",BLE_CONNECTION_EVENT,1,i);
         Serial1.printf(buf);
+
+        if(Particle.connected()){
+          Particle.publish("data",buf,PRIVATE);
+        }
       }
   }
     //snprintf(requestBuf, sizeof(requestBuf), "hook-response/%s/%s", "tcm-arm-device-locator", System.deviceID().c_str());
