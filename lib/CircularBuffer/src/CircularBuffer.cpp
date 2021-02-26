@@ -71,6 +71,8 @@
 
         SINGLE_THREADED_BLOCK(){
         if(full){
+            //We're writing to a full queue, so we are losing data.
+            Log.warn("Circ Buffer FULL! Dropping oldest item :/");
             readIdx = (readIdx+1) %maxNumItems;//Also move the read index forward, so we read the oldest data.
         }
         else if(readIdx == writeIdx){

@@ -66,7 +66,7 @@ int GatewayBLE::connectBLE(){
     int numNewConnections = 0; //Keep track of how many new devices we add.
 
     int numDevicesFound = foundDevices.size();
-    Log.info("Connecting to %d  BT devices ...",numDevicesFound);
+    //Log.info("Connecting to %d  BT devices ...",numDevicesFound);
 
     //Try and connect to each device.
     for(int i = 0; i < numDevicesFound; i++){
@@ -272,34 +272,34 @@ void GatewayBLE::disconnectCallback(const BlePeerDevice& peer, void* context){
 
 void GatewayBLE::connectedCallback(const BlePeerDevice& peer, void* context){
 
-    GatewayBLE * gatewayBLE = (GatewayBLE *) context;
-    int8_t id = gatewayBLE->getDeviceIndex(peer);
+    // GatewayBLE * gatewayBLE = (GatewayBLE *) context;
+    // int8_t id = gatewayBLE->getDeviceIndex(peer);
 
 
 }
 
 void GatewayBLE::scanResultCallback(const BleScanResult *scanResult, void *context){
     
-    Log.info("BLE Scan Results");
+    //Log.info("BLE Scan Results");
 
     //Get our BLE object, since we set this pointer when we registered the callback.
     GatewayBLE * gatewayBLE = (GatewayBLE *) context;
 
-    Log.trace("MAC: %02X:%02X:%02X:%02X:%02X:%02X | RSSI: %dBm",
-    scanResult->address[0], scanResult->address[1], scanResult->address[2],
-    scanResult->address[3], scanResult->address[4], scanResult->address[5], scanResult->rssi);
+    //Log.trace("MAC: %02X:%02X:%02X:%02X:%02X:%02X | RSSI: %dBm",
+    // scanResult->address[0], scanResult->address[1], scanResult->address[2],
+    // scanResult->address[3], scanResult->address[4], scanResult->address[5], scanResult->rssi);
 
 
     String name = scanResult->advertisingData.deviceName();
     if (name.length() > 0) {
-        Log.info("Found device: %s", name.c_str());
+       // Log.info("Found device: %s", name.c_str());
     }
 
     //Check the device name we just found against our approved list.
     for(int i=0; i< BLE_MAX_CONNECTION; i++){
 
         if(strcmp(name,gatewayBLE->approvedDevices[i]) ==0 ){
-
+            Log.info("Found approved device: %s", name.c_str());
             bleConnection_t connection;
             connection.addr = scanResult->address;
             connection.name = name;
