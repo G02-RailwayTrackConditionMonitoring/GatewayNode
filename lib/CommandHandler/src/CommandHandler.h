@@ -27,7 +27,8 @@ class CommandHandler{
 
         char publishBuffer[PUBLISH_BUFFER_SIZE];
 
-        
+        String endTime ;
+        String startTime;
         char readBuf[UART_BUFFER_SIZE];
         size_t readBufOffset = 0;
 

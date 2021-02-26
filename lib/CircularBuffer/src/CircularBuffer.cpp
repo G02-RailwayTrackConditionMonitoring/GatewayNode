@@ -37,7 +37,7 @@
 
         }
 
-        Log.info("Read: %d Write: %d numItems: %d full: %d",readIdx,writeIdx,currNumItems,full);
+        //Log.info("Read: %d Write: %d numItems: %d full: %d",readIdx,writeIdx,currNumItems,full);
 
     }
 

@@ -10,10 +10,11 @@ PublishQueueAsync publishQueue(publishQueueBuffer,sizeof(publishQueueBuffer));
 
 
 CommandHandler::CommandHandler(){
-  GoogleMapsDeviceLocator locator;// = GoogleMapsDeviceLocator();
-  char fromGPS[256]; 
-  char toGPS[256]; 
-  int GPSState = 1; 
+  //GoogleMapsDeviceLocator locator;// = GoogleMapsDeviceLocator();
+  
+  
+ 
+  
   //locator.withSubscribe(locationCallback);
   
 }
@@ -95,19 +96,23 @@ void CommandHandler::handleCommand(char* cmdString){
 
         case AVG_FORCE_DATA:    
                                 pubData = String::format(
-                                    "{\"fg\":\"%s\", \"tg\":\"%s\", \"xyz\":\"%s\"}",fromGPS, toGPS, data);       
+                                    "{\"fg\":\"%s\", \"tg\":\"%s\", \"st\":\"%s\", \"et\":\"%s\" \"xyz\":\"%s\"}",fromGPS, toGPS,startTime.c_str(),endTime.c_str(), data);       
                                 Serial.println(pubData) ;
                                 //snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"FORCE: %s\n",pubData);
                                 Log.info("UART CMD: %s",publishBuffer);
                                 Serial.printlnf("FROM GPS: %s", fromGPS);
                                 Serial.printlnf("TO GPS: %s", toGPS);
-
+                                
 
 
                                 GPSState =1; 
-                                if(Particle.connected()){
+                                
 
-                                bool sucess = Particle.publish("data", pubData,PRIVATE);
+                                publishQueue.publish("data", pubData,PRIVATE);
+
+                                char buf[255];
+                                snprintf(buf,255,"%d: fg:%.13s tg:%.13s st:%s, et:%s, xyz:%s\n",fromGPS,toGPS,startTime.c_str(),endTime.c_str(),data);
+                                Serial1.printf(buf);
 
                                 //We should handle if the send fails or were not connected...
                                 Log.info("Published data");
@@ -116,7 +121,7 @@ void CommandHandler::handleCommand(char* cmdString){
                                 //    Log.warn("LTE not connected for publish, transmission skipped.");
                                 //}
                                 break;
-                               }
+                               
 
         case GATEWAY_BATTERY:   {
 
@@ -149,13 +154,29 @@ void CommandHandler::handleCommand(char* cmdString){
 
                                 }
 
-        case SET_GPS:           locator.publishLocation();
-                                // @joseph.. how ? 
+        case SET_GPS:           {//locator.publishLocation();
+
+                                const char *scanData = locator.scan();
+                                if(scanData[0]){
+                                  publishQueue.publish("tcm-arm-device-locator",scanData,PRIVATE);//Do we want to queue these or just drop if no connection?
+                                }
+                                
                                 //set fromTime
+                                if(GPSState == 0){
+                                  startTime = Time.timeStr();
+                                  Log.info("start time: %s",startTime.c_str());
+                        
+                                }
+                                else if(GPSState == 1){
+                                  endTime = Time.timeStr();
+                                  Log.info("end time: %s",startTime.c_str());
+                                }
+
                                 //set toTime
                                 break;  
+                                }
                                 //case BATTERY_LEVEL(event = telemetry)
-                                //case SD_STORAGE (event = telemetry)                                                              
+                                //case SD_STORAGE (event = telemetry)      
 
         default:                Log.warn("Invalid command received: %d",cmdNum);
                                 break;

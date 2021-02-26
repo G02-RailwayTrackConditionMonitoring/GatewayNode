@@ -113,7 +113,9 @@ void setup()
  
   #endif
 
+  Time.zone(-5); //CST, set to -7 for PST?
   Particle.syncTime();
+  
 
   //Wait until were connected then log some info.
   if(Time.isValid()){
