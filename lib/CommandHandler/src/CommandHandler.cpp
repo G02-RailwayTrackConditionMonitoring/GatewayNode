@@ -110,8 +110,9 @@ void CommandHandler::handleCommand(char* cmdString){
 
                                 publishQueue.publish("data", pubData,PRIVATE);
 
+                                //Also send to esp, so we can log to sd card...
                                 char buf[255];
-                                snprintf(buf,255,"%d: fg:%.13s tg:%.13s st:%s, et:%s, xyz:%s\n",fromGPS,toGPS,startTime.c_str(),endTime.c_str(),data);
+                                snprintf(buf,255,"%d: fg:%.13s tg:%.13s st:%s, et:%s, xyz:%s\n",AVG_FORCE_DATA,fromGPS,toGPS,startTime.c_str(),endTime.c_str(),data);
                                 Serial1.printf(buf);
 
                                 //We should handle if the send fails or were not connected...
