@@ -4,6 +4,7 @@
 #include "ble_hal.h"
 #include "Particle.h"
 #include <vector>
+#include "CircularBuffer.h"
 
 #define SERVICE_UUID            "7abd7d09-dabd-4b5d-882d-7f4e5096f8f9"
 #define CHARACTERISTIC_UUID     0xe9,0xa4,0x19,0x3d,0x4d,0x05,0x45,0xf9,0x8b,0xc2,0x91,0x15,0x78,0x6c,0x96,0xc2
@@ -16,6 +17,9 @@
 
 #define BENCHMARK_START_FLAG    0xA5
 #define BENCHMARK_END_FLAG      0x5A
+
+#define BLE_RX_DATA_SIZE        244     //The number of bytes for each BLE data packet.
+#define BLE_RX_BUFFER_COUNT     6       //Number of buffers for each node. Total memory used for buffers will be BLE_RX_BUFFER_COUNT*BLE_RX_DATA_SIZE*BLE_MAX_CONNECTION.
 
 //This groups useful info about a connection together.
 typedef struct{
@@ -53,10 +57,15 @@ class GatewayBLE{
         int dataAvailable(uint8_t nodeId);
  
 
-        //Copies data from the rx buffer of a node into the buffer specified. Use dataAvailable before to get the number of bytes transfered.
+        //Copies data from the rx buffer of a node into the circular buffer specified. Make sure that the buffer items are large enough.
         //Calling this effectively removes data from the rxBufffer.
-        //Returns true if the read was good, false if we have lost data.
-        bool getData(uint8_t* data, uint8_t nodeId);
+        //Returns the total number of bytes.
+        uint16_t getData(CircularBuffer& buffer, uint8_t nodeId);
+
+        uint8_t * getReadPtr(uint8_t nodeId);
+
+        //Returns the device id (index) based on the name. G02_A is 0, G02_B is 1, etc.
+        uint8_t getDeviceId(String name);
 
         std::vector<bleConnection_t> connectedNodes;  //Handle for the BLE connections.
         uint8_t numConnections;
@@ -81,13 +90,13 @@ class GatewayBLE{
         std::vector<bleConnection_t> foundDevices; 
 
         //For receiveing data.
-        std::vector<uint8_t> rxBufferIndices;
-        std::vector<uint8_t*> rxBuffers;
-        std::vector<os_mutex_t> rxBufferLocks;
+        std::vector<uint16_t> rxBufferWriteIdx;
+        std::vector<uint16_t> rxBufferReadIdx;
+        std::vector<CircularBuffer> rxBuffers;
         std::vector<bool>   rxBufferOverwrite;
 
         //For benchmarking.
-        uint32_t rxCount;
+        uint32_t rxCount=0;
         uint32_t startTime=0;
         uint32_t endTime=0;
         bool benchmarkDone[2] = {false,false}; //Holds wether a device has sent all its data.
@@ -100,8 +109,7 @@ class GatewayBLE{
         //Returns the index of the device with the connection handle "peer". This is with repspect to the connectedDevices array.
         int8_t getDeviceIndex(const BlePeerDevice& peer);
 
-        //Returns the device id (index) based on the name. G02_A is 0, G02_B is 1, etc.
-        uint8_t getDeviceId(String name);
+        
 
         //Callbacks 
         //These are called on the BLE stack, so don't do long operations (delay,etc) or use tons of memory.
