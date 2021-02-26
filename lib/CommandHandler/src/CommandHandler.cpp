@@ -17,6 +17,7 @@ void CommandHandler::getChar(){
      if (readBufOffset < UART_BUFFER_SIZE)
     {
       char c = Serial1.read();
+      //Log.info("uart: %c",c);
       if (c != '\n')
       {
         
@@ -46,12 +47,13 @@ void CommandHandler::handleCommand(char* cmdString){
     char* data = strtok(NULL,":");
 
     uint8_t cmdNum = atoi(cmd);
-
+    
     
     digitalWrite(D2,HIGH);
     switch(cmdNum){
 
-        case AVG_FORCE_DATA:    snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"FORCE: %s\n",data);
+        case AVG_FORCE_DATA:    {
+                               snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"FORCE: %s\n",data);
                                 Log.info("UART CMD: %s",publishBuffer);
                                 //if(Particle.connected()){
 
@@ -63,6 +65,37 @@ void CommandHandler::handleCommand(char* cmdString){
                                 //    Log.warn("LTE not connected for publish, transmission skipped.");
                                 //}
                                 break;
+                               }
+
+        case GATEWAY_BATTERY:   {
+
+                                float batterySoc = System.batteryCharge();
+                                
+                                snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"bl: %.1f\n",batterySoc);
+                                publishQueue.publish("telemetry",publishBuffer,PRIVATE);
+
+                                char buf[255];
+                                sprintf(buf,"%d: %.1f\n",GATEWAY_BATTERY,batterySoc);
+
+                                Serial1.printf(buf);
+                                break;
+                                }
+
+        case GATEWAY_BATTERY_REQ:{ float batterySoc = System.batteryCharge();
+                                
+                                char buf[255];
+                                sprintf(buf,"%d: %.1f\n",GATEWAY_BATTERY,batterySoc);
+
+                                Serial1.printf(buf);
+                                break;
+                                }
+
+        case GATEWAY_FREE_SPACE:{
+
+                                snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"fs:%s\n",data);
+                                publishQueue.publish("telemetry",publishBuffer,PRIVATE);
+                                break;
+                                }
 
         default:                Log.warn("Invalid command received: %d",cmdNum);
                                 break;
