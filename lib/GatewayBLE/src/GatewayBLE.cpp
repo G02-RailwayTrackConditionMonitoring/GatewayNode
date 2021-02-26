@@ -224,7 +224,7 @@ void GatewayBLE::bleRxDataCallback(const uint8_t* data, size_t len, const BlePee
 
     //Figure out which node we are receiveing from.
     int8_t id = gatewayBLE->getDeviceIndex(peer);
-    Log.info("%d Received %d bytes from node %d.\n",gatewayBLE->rxCount,len,id);
+    //Log.info("%d Received %d bytes from node %d.\n",gatewayBLE->rxCount,len,id);
 
     uint8_t * location = gatewayBLE->rxBuffers[id].getWritePtr();
     //Copy data to buffer correpsonding to node we received from.

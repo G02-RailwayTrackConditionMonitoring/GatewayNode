@@ -23,9 +23,12 @@ typedef enum{
     GATEWAY_FREE_SPACE,
     TIME_UPDATE,
     GATEWAY_BATTERY_REQ,
+    SET_GPS,
     NUM_GATEWAY_COMMANDS
 } GatewayCommand_t;
-
+//NUM_GATEWAY_COMMANDS should always be last... Then it corresponds to the number of commands in the enum, since the enumeration starts at 0...
+  
+  
 extern const char* GatewayCommand_Str[NUM_GATEWAY_COMMANDS];
 
 typedef union {

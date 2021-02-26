@@ -85,7 +85,7 @@
             currNumItems = maxNumItems-readIdx+writeIdx;
         }
         }
-        Log.info("Write to circ buff. % items",currNumItems);
+        //Log.info("Write to circ buff. % items",currNumItems);
         return itemPtrs[temp];
     }
 

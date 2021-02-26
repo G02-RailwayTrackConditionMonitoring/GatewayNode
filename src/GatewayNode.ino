@@ -2,7 +2,7 @@
 #include "CircularBuffer.h"
 #include "CommandHandler.h"
 #include "GatewayCommands.h"
-
+#include "Geolocator.h"
 SYSTEM_THREAD(ENABLED);
 
 //#include "spark_wiring_ble.h"
@@ -20,6 +20,7 @@ SerialLogHandler logHandler(LOG_LEVEL_ALL, {{"app", LOG_LEVEL_ALL}});
  uint8_t spi_buff[245]; //Hold 40 samples +1 byte id.+ 4 byte frame num
 
 CommandHandler cmdHandler = CommandHandler();
+static char requestBuf[256];
 
 //Setup the input and output pins.
 int buttonPin = D5;
@@ -32,24 +33,28 @@ GatewayBLE BleStack;
 
 #define MOSI D12
 #define MISO D11
-#define CS D14
+#define CS A5
 #define SCK D13
 #define HANDSHAKE A4
 char buf[6] = "hello";
 char spiSendBuf[32] = "SPI transmission - dummy data";
 
-
+GoogleMapsDeviceLocator locator;// = GoogleMapsDeviceLocator();
 
 int64_t t = 0; 
 
 volatile bool spiBusy = false;
 void spiDoneHandler();
 void connectLTE();
+void handleDeviceLocator(const char *event, const char *data);
+void testing(const char *event, const char *data){
+  Serial.println("TESTING");
+}
 
 void setup()
 {
 
-
+  
   #ifdef DEBUG
   delay(3000);
   Log.info("This is a debug build.");
@@ -96,6 +101,7 @@ void setup()
     {
       
       Log.info("Connected to the Particle Cloud.");
+
 
       
     }
@@ -146,6 +152,10 @@ void setup()
         }
       }
   }
+    //snprintf(requestBuf, sizeof(requestBuf), "hook-response/%s/%s", "tcm-arm-device-locator", System.deviceID().c_str());
+
+    Particle.subscribe(requestBuf,handleDeviceLocator , MY_DEVICES);
+    Particle.subscribe("hook-response/tcm-arm-device-locator", testing, MY_DEVICES);
 }
 
 
@@ -181,7 +191,7 @@ void loop()
 
     digitalWrite(D6,HIGH); //For debugging
     
-    Log.info("ready to send 1 of %d over SPI for node A.",packets);
+    //Log.info("ready to send 1 of %d over SPI for node A.",packets);
     
     uint8_t* location = BleStack.getReadPtr(0);
     memcpy(spi_buff,location,BLE_RX_DATA_SIZE);
@@ -235,4 +245,11 @@ void loop()
 void spiDoneHandler(){
   digitalWrite(CS,HIGH);
   spiBusy = false;
+}
+
+void handleDeviceLocator(const char *event, const char *data) {
+  //Serial.println("HANDLE DEVICE LOCATOR");
+  //Serial.printlnf("%s", data);
+  //Particle.publish("location", data, PRIVATE); 
+  cmdHandler.setGPS(data); 
 }
