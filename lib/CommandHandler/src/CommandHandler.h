@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdint.h>
 #include "Geolocator.h"
+#include "PublishQueueAsyncRK.h"
 
 #define PUBLISH_BUFFER_SIZE 1023
 #define UART_BUFFER_SIZE    255
@@ -13,7 +14,7 @@ class CommandHandler{
 
     public:
 
-        CommandHandler();
+        CommandHandler(PublishQueueAsync *q);
         char fromGPS[256]; 
         char toGPS[256]; 
         int GPSState = 1;     
@@ -25,6 +26,7 @@ class CommandHandler{
         
     private:
 
+        PublishQueueAsync* publishQueue;
         char publishBuffer[PUBLISH_BUFFER_SIZE];
 
         String endTime ;

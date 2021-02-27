@@ -5,6 +5,7 @@
 #include "Particle.h"
 #include <vector>
 #include "CircularBuffer.h"
+#include "PublishQueueAsyncRK.h"
 
 #define SERVICE_UUID            "7abd7d09-dabd-4b5d-882d-7f4e5096f8f9"
 #define CHARACTERISTIC_UUID     0xe9,0xa4,0x19,0x3d,0x4d,0x05,0x45,0xf9,0x8b,0xc2,0x91,0x15,0x78,0x6c,0x96,0xc2
@@ -37,7 +38,7 @@ class GatewayBLE{
     public:
 
         //Constructor
-        GatewayBLE();
+        GatewayBLE(PublishQueueAsync *q);
 
         //Turns the BT radio on.
         void startBLE();
@@ -71,6 +72,8 @@ class GatewayBLE{
         uint8_t numConnections;
 
     private:
+
+        PublishQueueAsync *publishQueue;
 
         //The value of these is from the defined constants at the top of the file.
         BleUuid serviceUuid; 
