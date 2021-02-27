@@ -96,7 +96,7 @@ void CommandHandler::handleCommand(char* cmdString){
 
         case AVG_FORCE_DATA:    
                                 pubData = String::format(
-                                    "{\"fg\":\"%s\", \"tg\":\"%s\", \"st\":\"%s\", \"et\":\"%s\" \"xyz\":\"%s\"}",fromGPS, toGPS,startTime.c_str(),endTime.c_str(), data);       
+                                    "{\"fg\":\"%s\", \"tg\":\"%s\", \"st\":\"%s\", \"et\":\"%s\", \"xyz\":\"%s\"}",fromGPS, toGPS,startTime.c_str(),endTime.c_str(), data);       
                                 Serial.println(pubData) ;
                                 //snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"FORCE: %s\n",pubData);
                                 Log.info("UART CMD: %s",publishBuffer);
