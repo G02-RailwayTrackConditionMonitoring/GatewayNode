@@ -93,7 +93,7 @@ void CommandHandler::handleCommand(char* cmdString){
     switch(cmdNum){
 
 
-        case AVG_FORCE_DATA:    
+        case AVG_FORCE_DATA:{    
                                 pubData = String::format(
                                     "{\"fg\":\"%s\", \"tg\":\"%s\", \"st\":\"%s\", \"et\":\"%s\", \"xyz\":\"%s\"}",fromGPS, toGPS,startTime.c_str(),endTime.c_str(), data);       
                                 Serial.println(pubData) ;
@@ -109,9 +109,13 @@ void CommandHandler::handleCommand(char* cmdString){
 
                                 publishQueue->publish("data", pubData,PRIVATE);
 
+                                char* x = strtok(fromGPS,",");
+                                char* y = strtok(NULL,",");
+                                char* x2 = strtok(toGPS,",");
+                                char* y2 = strtok(NULL,",");
                                 //Also send to esp, so we can log to sd card...
-                                char buf[255];
-                                snprintf(buf,255,"%d: fg:%.13s tg:%.13s st:%s, et:%s, xyz:%s\n",AVG_FORCE_DATA,fromGPS,toGPS,startTime.c_str(),endTime.c_str(),data);
+                                char buf[500];
+                                snprintf(buf,499,"%d: %.5s,%.5s  %.5s,%.5s %s, %s, %s\n",AVG_FORCE_DATA,x,y,x2,y2,startTime.c_str(),endTime.c_str(),data);
                                 Serial1.printf(buf);
 
                                 //We should handle if the send fails or were not connected...
@@ -121,7 +125,7 @@ void CommandHandler::handleCommand(char* cmdString){
                                 //    Log.warn("LTE not connected for publish, transmission skipped.");
                                 //}
                                 break;
-                               
+        }
 
         case GATEWAY_BATTERY:   {
 
@@ -150,6 +154,15 @@ void CommandHandler::handleCommand(char* cmdString){
 
                                 snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"fs:%s,t:%s\n",data, Time.timeStr().c_str());
                                 publishQueue->publish("telemetry",publishBuffer,PRIVATE);
+
+                                if(Particle.connected()){
+                                  CellularSignal sig = Cellular.RSSI();
+                                  float quality = sig.getQuality(); //Percentage 0 to 100.
+                                    
+                                  char buf[255];
+                                  sprintf(buf,"%d:%3.1f\n",LTE_RSSI_DATA,quality);     
+                                  Serial1.printf(buf);
+                                }
                                 break;
 
                                 }

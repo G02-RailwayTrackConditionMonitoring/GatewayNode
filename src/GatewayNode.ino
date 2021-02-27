@@ -62,7 +62,9 @@ void testing(const char *event, const char *data){
 void setup()
 {
 
-  
+  //UART
+  Serial1.begin(115200, SERIAL_DATA_BITS_8 | SERIAL_STOP_BITS_1 | SERIAL_PARITY_NO); 
+
   #ifdef DEBUG
   delay(3000);
   Log.info("This is a debug build.");
@@ -75,16 +77,16 @@ void setup()
 
   Serial.println("Starting application setup.");
   Serial.begin(9600);
-  waitFor(Serial.isConnected, 30000);
+  waitFor(Serial.isConnected, 5000);
 
   pinMode(buttonPin,INPUT_PULLUP);
   pinMode(D7,OUTPUT);
   pinMode(D6,OUTPUT);
   pinMode(D2,OUTPUT);
   pinMode(D3,OUTPUT);
+  pinMode(A0,OUTPUT);
 
-  //UART
-  Serial1.begin(115200, SERIAL_DATA_BITS_8 | SERIAL_STOP_BITS_1 | SERIAL_PARITY_NO); 
+  
   //SPI
   pinMode(MOSI, OUTPUT);
   pinMode(CS, OUTPUT);
@@ -147,10 +149,10 @@ void setup()
   
   //Auto connect
   while(BleStack.numConnections<NUM_BLE_NODES){
-      
+      digitalWrite(A0, HIGH);
       BleStack.scanBLE();
       uint8_t numCon = BleStack.connectBLE();
-      delay(200);
+      delay(500);
       char buf[255];
       for(int i=0; i<numCon;i++){
         
@@ -160,11 +162,13 @@ void setup()
         snprintf(buf,255,"ble:%d,n:%d,t:%s",1,i,Time.timeStr().c_str());
         publishQueue.publish("telemetry",buf,PRIVATE);
       }
+    digitalWrite(A0,LOW);
   }
     //snprintf(requestBuf, sizeof(requestBuf), "hook-response/%s/%s", "tcm-arm-device-locator", System.deviceID().c_str());
 
     Particle.subscribe(requestBuf,handleDeviceLocator , MY_DEVICES);
     Particle.subscribe("hook-response/tcm-arm-device-locator", testing, MY_DEVICES);
+    
 }
 
 
@@ -179,6 +183,7 @@ void loop()
 
   //Try and reconnect BLE if lost.
   if(BleStack.numConnections<NUM_BLE_NODES){
+    digitalWrite(A0,HIGH);
     BleStack.scanBLE();
    uint8_t numCon = BleStack.connectBLE();
     for(int i=0; i<numCon;i++){
@@ -187,6 +192,7 @@ void loop()
         Serial1.printf(buf);
          snprintf(buf,255,"ble:%d,n:%d,t:%s",1,i,Time.timeStr().c_str());
         publishQueue.publish("telemetry",buf,PRIVATE);
+        digitalWrite(A0,LOW);
   }
   }
 
