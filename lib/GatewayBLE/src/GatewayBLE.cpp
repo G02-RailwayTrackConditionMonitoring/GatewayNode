@@ -266,7 +266,7 @@ void GatewayBLE::disconnectCallback(const BlePeerDevice& peer, void* context){
             char buf[255];
             sprintf(buf,"%d: %d,%d\n",BLE_CONNECTION_EVENT,0,i);
             Serial1.printf(buf);
-            snprintf(buf,255,"ble:%d n:%d t:%s",0,i,Time.timeStr().c_str());
+            snprintf(buf,255,"ble:%d,n:%d,t:%s",0,i,Time.timeStr().c_str());
             gatewayBLE->publishQueue->publish("telemetry",buf,PRIVATE);
 
         }

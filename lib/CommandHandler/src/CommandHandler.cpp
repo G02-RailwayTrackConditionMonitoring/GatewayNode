@@ -127,7 +127,7 @@ void CommandHandler::handleCommand(char* cmdString){
 
                                 float batterySoc = System.batteryCharge();
                                 
-                                snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"bl:%.1f t:%s\n",batterySoc,Time.timeStr().c_str());
+                                snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"bl:%.1f,t:%s\n",batterySoc,Time.timeStr().c_str());
                                 publishQueue->publish("telemetry",publishBuffer,PRIVATE);
 
                                 char buf[255];
@@ -148,7 +148,7 @@ void CommandHandler::handleCommand(char* cmdString){
 
         case GATEWAY_FREE_SPACE:{
 
-                                snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"fs:%s t:%s\n",data, Time.timeStr().c_str());
+                                snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"fs:%s,t:%s\n",data, Time.timeStr().c_str());
                                 publishQueue->publish("telemetry",publishBuffer,PRIVATE);
                                 break;
 

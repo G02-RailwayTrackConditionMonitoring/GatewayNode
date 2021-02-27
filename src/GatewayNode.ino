@@ -157,7 +157,7 @@ void setup()
         sprintf(buf,"%d: %d,%d\n",BLE_CONNECTION_EVENT,1,i);
         Serial1.printf(buf);
 
-        snprintf(buf,255,"ble:%d n:%d t:%s",1,i,Time.timeStr().c_str());
+        snprintf(buf,255,"ble:%d,n:%d,t:%s",1,i,Time.timeStr().c_str());
         publishQueue.publish("telemetry",buf,PRIVATE);
       }
   }
@@ -185,7 +185,7 @@ void loop()
       char buf[255];
        sprintf(buf,"%d: %d,%d\n",BLE_CONNECTION_EVENT,1,i);
         Serial1.printf(buf);
-         snprintf(buf,255,"ble:%d n:%d t:%s",1,i,Time.timeStr().c_str());
+         snprintf(buf,255,"ble:%d,n:%d,t:%s",1,i,Time.timeStr().c_str());
         publishQueue.publish("telemetry",buf,PRIVATE);
   }
   }
