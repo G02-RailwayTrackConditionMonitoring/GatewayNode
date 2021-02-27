@@ -3,6 +3,8 @@
 #include "CommandHandler.h"
 #include "GatewayCommands.h"
 #include "Geolocator.h"
+#include "PublishQueueAsyncRK.h"
+
 SYSTEM_THREAD(ENABLED);
 
 //#include "spark_wiring_ble.h"
@@ -17,10 +19,16 @@ SerialLogHandler logHandler(LOG_LEVEL_ALL, {{"app", LOG_LEVEL_ALL}});
 
 #define GCP
 
- uint8_t spi_buff[245]; //Hold 40 samples +1 byte id.+ 4 byte frame num
+uint8_t spi_buff[245]; //Hold 40 samples +1 byte id.+ 4 byte frame num
 
-CommandHandler cmdHandler = CommandHandler();
+uint8_t publishQueueBuffer[2048];
+PublishQueueAsync publishQueue(publishQueueBuffer,sizeof(publishQueueBuffer));
+
+
+CommandHandler cmdHandler = CommandHandler(&publishQueue);
 static char requestBuf[256];
+
+
 
 //Setup the input and output pins.
 int buttonPin = D5;
@@ -28,7 +36,7 @@ int ledPin = D4;
 
 //Gloabl variables
 bool runBlink = false;
-GatewayBLE BleStack;
+GatewayBLE BleStack(&publishQueue);
 #define NUM_BLE_NODES 1
 
 #define MOSI D12
@@ -113,7 +121,7 @@ void setup()
  
   #endif
 
-  Time.zone(-5); //CST, set to -7 for PST?
+  Time.zone(-6); //CST, set to -8 for PST?
   Particle.syncTime();
   
 
@@ -149,9 +157,8 @@ void setup()
         sprintf(buf,"%d: %d,%d\n",BLE_CONNECTION_EVENT,1,i);
         Serial1.printf(buf);
 
-        if(Particle.connected()){
-          Particle.publish("data",buf,PRIVATE);
-        }
+        snprintf(buf,255,"ble:%d n:%d t:%s",1,i,Time.timeStr().c_str());
+        publishQueue.publish("telemetry",buf,PRIVATE);
       }
   }
     //snprintf(requestBuf, sizeof(requestBuf), "hook-response/%s/%s", "tcm-arm-device-locator", System.deviceID().c_str());
@@ -178,6 +185,8 @@ void loop()
       char buf[255];
        sprintf(buf,"%d: %d,%d\n",BLE_CONNECTION_EVENT,1,i);
         Serial1.printf(buf);
+         snprintf(buf,255,"ble:%d n:%d t:%s",1,i,Time.timeStr().c_str());
+        publishQueue.publish("telemetry",buf,PRIVATE);
   }
   }
 

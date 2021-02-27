@@ -1,14 +1,16 @@
 #include  <GatewayBLE.h>
 #include "GatewayCommands.h"
 
+
 #define MOSI D12
 #define MISO D11
 #define CS D14
 #define SCK D13
 #define HANDSHAKE A4
 
-GatewayBLE::GatewayBLE(){
+GatewayBLE::GatewayBLE(PublishQueueAsync *q){
 
+    publishQueue = q;
     numConnections = 0;
 
     //Setup up the service and characteristic UUIDs.
@@ -264,6 +266,9 @@ void GatewayBLE::disconnectCallback(const BlePeerDevice& peer, void* context){
             char buf[255];
             sprintf(buf,"%d: %d,%d\n",BLE_CONNECTION_EVENT,0,i);
             Serial1.printf(buf);
+            snprintf(buf,255,"ble:%d n:%d t:%s",0,i,Time.timeStr().c_str());
+            gatewayBLE->publishQueue->publish("telemetry",buf,PRIVATE);
+
         }
     }
 

@@ -2,17 +2,16 @@
 
 #include "GatewayCommands.h"
 #include <Particle.h>
-#include "PublishQueueAsyncRK.h"
-
-uint8_t publishQueueBuffer[2048];
-PublishQueueAsync publishQueue(publishQueueBuffer,sizeof(publishQueueBuffer));
 
 
 
-CommandHandler::CommandHandler(){
+
+
+
+CommandHandler::CommandHandler(PublishQueueAsync *q){
   //GoogleMapsDeviceLocator locator;// = GoogleMapsDeviceLocator();
   
-  
+  publishQueue = q;
  
   
   //locator.withSubscribe(locationCallback);
@@ -108,7 +107,7 @@ void CommandHandler::handleCommand(char* cmdString){
                                 GPSState =1; 
                                 
 
-                                publishQueue.publish("data", pubData,PRIVATE);
+                                publishQueue->publish("data", pubData,PRIVATE);
 
                                 //Also send to esp, so we can log to sd card...
                                 char buf[255];
@@ -128,8 +127,8 @@ void CommandHandler::handleCommand(char* cmdString){
 
                                 float batterySoc = System.batteryCharge();
                                 
-                                snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"bl: %.1f\n",batterySoc);
-                                publishQueue.publish("telemetry",publishBuffer,PRIVATE);
+                                snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"bl:%.1f t:%s\n",batterySoc,Time.timeStr().c_str());
+                                publishQueue->publish("telemetry",publishBuffer,PRIVATE);
 
                                 char buf[255];
                                 sprintf(buf,"%d: %.1f\n",GATEWAY_BATTERY,batterySoc);
@@ -149,8 +148,8 @@ void CommandHandler::handleCommand(char* cmdString){
 
         case GATEWAY_FREE_SPACE:{
 
-                                snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"fs:%s\n",data);
-                                publishQueue.publish("telemetry",publishBuffer,PRIVATE);
+                                snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"fs:%s t:%s\n",data, Time.timeStr().c_str());
+                                publishQueue->publish("telemetry",publishBuffer,PRIVATE);
                                 break;
 
                                 }
@@ -159,7 +158,7 @@ void CommandHandler::handleCommand(char* cmdString){
 
                                 const char *scanData = locator.scan();
                                 if(scanData[0]){
-                                  publishQueue.publish("tcm-arm-device-locator",scanData,PRIVATE);//Do we want to queue these or just drop if no connection?
+                                  publishQueue->publish("tcm-arm-device-locator",scanData,PRIVATE);//Do we want to queue these or just drop if no connection?
                                 }
                                 
                                 //set fromTime
