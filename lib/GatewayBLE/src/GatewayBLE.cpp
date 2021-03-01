@@ -107,20 +107,20 @@ int GatewayBLE::connectBLE(){
             if(status){
 
                 Log.info("Data charactreristic found!");
-                dataStream.subscribe(true);
+               
             }
             status &= newConnection.getCharacteristicByUUID(telemetryStream,telemetryStream_Uuid);
             if(status){
 
                 Log.info("Telemetry charactreristic found!");
-                telemetryStream.subscribe(true);
+                
             }
 
             status &= newConnection.getCharacteristicByUUID(commandStreams[index],commandStream_Uuids[index]);
             if(status){
 
-                int resp =  commandStreams[index].subscribe(true);
-                Log.info("Command charactreristic found! %d",resp);
+                
+                Log.info("Command charactreristic found! ");
                
             }
 
@@ -131,6 +131,9 @@ int GatewayBLE::connectBLE(){
                 connectedNodes.push_back(foundDevices[i]);
                 numConnections++;
                 numNewConnections++;
+                 dataStream.subscribe(true);
+                 telemetryStream.subscribe(true);
+                 int resp =  commandStreams[index].subscribe(true);
             }
         }
     }
