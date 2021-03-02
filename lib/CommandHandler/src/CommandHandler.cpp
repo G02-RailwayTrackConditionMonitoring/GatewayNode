@@ -174,22 +174,29 @@ void CommandHandler::handleCommand(char* cmdString){
                                   publishQueue->publish("tcm-arm-device-locator",scanData,PRIVATE);//Do we want to queue these or just drop if no connection?
                                 }
                                 
-                                //set fromTime
-                                if(GPSState == 0){
-                                  startTime = Time.timeStr();
-                                  Log.info("start time: %s",startTime.c_str());
+                                // //set fromTime
+                                // if(GPSState == 0){
+                                //   startTime = Time.timeStr();
+                                //   Log.info("start time: %s",startTime.c_str());
                         
-                                }
-                                else if(GPSState == 1){
-                                  endTime = Time.timeStr();
-                                  Log.info("end time: %s",startTime.c_str());
-                                }
+                                // }
+                                // else if(GPSState == 1){
+                                //   endTime = Time.timeStr();
+                                //   Log.info("end time: %s",startTime.c_str());
+                                // }
 
                                 //set toTime
                                 break;  
                                 }
-                                //case BATTERY_LEVEL(event = telemetry)
-                                //case SD_STORAGE (event = telemetry)      
+        case SET_START_TIME:   {
+                                  startTime = Time.timeStr();
+                                  Log.info("start time: %s",startTime.c_str());
+                               }
+        case SET_END_TIME:   {
+                                  endTime = Time.timeStr();
+                                  Log.info("end time: %s",endTime.c_str());
+                               }            
+                                                      
 
         default:                Log.warn("Invalid command received: %d",cmdNum);
                                 break;

@@ -6,7 +6,7 @@
 #include "Geolocator.h"
 #include "PublishQueueAsyncRK.h"
 
-#define PUBLISH_BUFFER_SIZE 1023
+#define PUBLISH_BUFFER_SIZE 1024*15-1
 #define UART_BUFFER_SIZE    255
 
 
