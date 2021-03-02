@@ -14,6 +14,10 @@ const char* GatewayCommand_Str[NUM_GATEWAY_COMMANDS]={
     "TIME_UPDATE",
     "GATEWAY_BATTERY_REQ",
     "SET_GPS",
+    "SET_START_TIME", 
+    "SET_END_TIME",
+    "SET_THRESHOLD",
+    "SET_MODE", 
 };
 
 
