@@ -201,21 +201,52 @@ void CommandHandler::handleCommand(char* cmdString){
         case TX_STD_Y:        {
                                 
                                 if(strlen(yStdBuf)>=360){
-                                  //Particle Publish
-                                  
                                   if(txStdY ==1){
                                     Log.info("STD Y Data %s",yStdBuf);
                                     snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"yStd:%s,t:%s\n",yStdBuf, Time.timeStr().c_str());
                                     publishQueue->publish("telemetry",publishBuffer,PRIVATE);
                                   }
-                                  
                                   memset(yStdBuf, 0, 380);
                                 }
                                 sprintf(yStdBuf+strlen(yStdBuf),"%s",data);
                                 break;
-
-                              }                               
-                                                      
+                              }      
+        case TX_RMS_X:        {
+                                if(strlen(xRmsBuf)>=360){
+                                  if(txRmsX ==1){
+                                    Log.info("RMS X Data %s",xRmsBuf);
+                                    snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"xRms:%s,t:%s\n",xRmsBuf, Time.timeStr().c_str());
+                                    publishQueue->publish("telemetry",publishBuffer,PRIVATE);
+                                  }
+                                  memset(xRmsBuf, 0, 380);
+                                }
+                                sprintf(xRmsBuf+strlen(xRmsBuf),"%s",data);
+                                break;
+                              }                                                             
+        case TX_RMS_Y:        {
+                                if(strlen(yRmsBuf)>=360){
+                                  if(txRmsY ==1){
+                                    Log.info("RMS Y Data %s",yRmsBuf);
+                                    snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"yRms:%s,t:%s\n",yRmsBuf, Time.timeStr().c_str());
+                                    publishQueue->publish("telemetry",publishBuffer,PRIVATE);
+                                  }
+                                  memset(yRmsBuf, 0, 380);
+                                }
+                                sprintf(yRmsBuf+strlen(yRmsBuf),"%s",data);
+                                break;
+                              }                                                       
+        case TX_RMS_Z:        {
+                                if(strlen(zRmsBuf)>=360){
+                                  if(txRmsZ ==1){
+                                    Log.info("RMS Z Data %s",zRmsBuf);
+                                    snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"zRms:%s,t:%s\n",zRmsBuf, Time.timeStr().c_str());
+                                    publishQueue->publish("telemetry",publishBuffer,PRIVATE);
+                                  }
+                                  memset(zRmsBuf, 0, 380);
+                                }
+                                sprintf(zRmsBuf+strlen(zRmsBuf),"%s",data);
+                                break;
+                              }       
 
         default:                Log.warn("Invalid command received: %d",cmdNum);
                                 break;

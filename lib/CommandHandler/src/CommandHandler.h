@@ -18,6 +18,9 @@ class CommandHandler{
         char fromGPS[256]; 
         char toGPS[256]; 
         char yStdBuf[380]; 
+        char xRmsBuf[380]; 
+        char yRmsBuf[380]; 
+        char zRmsBuf[380]; 
         int GPSState = 1;     
         String pubData = "";
         void getChar();
@@ -25,6 +28,9 @@ class CommandHandler{
         void locationCallback(float lat, float lon, float accuracy);
         GoogleMapsDeviceLocator locator;// = GoogleMapsDeviceLocator();
         int txStdY = 0;
+        int txRmsX = 0;
+        int txRmsY = 0;
+        int txRmsZ = 0;
         
     private:
 

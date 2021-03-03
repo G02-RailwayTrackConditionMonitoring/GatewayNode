@@ -14,7 +14,7 @@ SYSTEM_THREAD(ENABLED);
 SYSTEM_MODE(SEMI_AUTOMATIC);
 
 //This sets the log level for logging over USB.
-SerialLogHandler logHandler(LOG_LEVEL_ALL, {{"app", LOG_LEVEL_ALL}});
+SerialLogHandler logHandler(LOG_LEVEL_NONE, {{"app", LOG_LEVEL_NONE}});
 
 #define GCP
 
@@ -60,12 +60,18 @@ void testing(const char *event, const char *data)
 int setThreshold(String threshString);
 int setMode(String modeString);
 int setTxStdY(String txStdYString);
+int setTxRmsX(String txRmsXString);
+int setTxRmsY(String txRmsYString);
+int setTxRmsZ(String txRmsZString);
 
 //particle varibale
 int threshold = 1;
 int prevThreshold = 1;
 int mode = 1; 
 int particleTxStdY = 0;
+int particleTxRmsX = 0;
+int particleTxRmsY = 0;
+int particleTxRmsZ = 0;
 void setup()
 {
 
@@ -106,9 +112,15 @@ void setup()
   Particle.function("setThreshold", setThreshold);
   Particle.function("setMode", setMode);
   Particle.function("setTxStdY", setTxStdY);
+  Particle.function("setTxRmsX", setTxRmsX);
+  Particle.function("setTxRmsY", setTxRmsY);
+  Particle.function("setTxRmsZ", setTxRmsZ);
   Particle.variable("threshold", threshold);
   Particle.variable("mode", mode);
   Particle.variable("txStdY", particleTxStdY);
+  Particle.variable("particleTxRmsX", particleTxRmsX);
+  Particle.variable("particleTxRmsY", particleTxRmsY);
+  Particle.variable("particleTxRmsZ", particleTxRmsZ);
   if (!Particle.connected())
   {
     Particle.connect();
@@ -227,7 +239,7 @@ void loop()
     memcpy(spi_buff, location, BLE_RX_DATA_SIZE);
 
     spi_buff[244] = 0; //Last byte indicate this data is from node 0.
-    //Log.info("x: %d y: %d, z: %d", *((int16_t *)&spi_buff[0]), *((int16_t *)&spi_buff[2]), *((int16_t *)&spi_buff[4]));
+    Log.info("x: %d y: %d, z: %d", *((int16_t *)&spi_buff[0]), *((int16_t *)&spi_buff[2]), *((int16_t *)&spi_buff[4]));
     //delay?
     spiBusy = true;
     digitalWrite(CS, LOW);
@@ -273,8 +285,26 @@ int setMode(String modeString) {
 }
 
 int setTxStdY(String txStdYString){
-  Serial.println(txStdYString);
   cmdHandler.txStdY = txStdYString.toInt(); 
   particleTxStdY = txStdYString.toInt(); 
+  return 1;
+}
+
+int setTxRmsX(String txRmsXString){
+  Log.info("%s",txRmsXString);
+  cmdHandler.txRmsX = txRmsXString.toInt(); 
+  particleTxRmsX = txRmsXString.toInt(); 
+  return 1;
+}
+int setTxRmsY(String txRmsYString){
+  Log.info("%s",txRmsYString);
+  cmdHandler.txRmsY = txRmsYString.toInt(); 
+  particleTxRmsY = txRmsYString.toInt(); 
+  return 1;
+}
+int setTxRmsZ(String txRmsZString){
+  Log.info("%s",txRmsZString);
+  cmdHandler.txRmsZ = txRmsZString.toInt(); 
+  particleTxRmsZ = txRmsZString.toInt(); 
   return 1;
 }
