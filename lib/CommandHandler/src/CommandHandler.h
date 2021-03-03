@@ -17,12 +17,14 @@ class CommandHandler{
         CommandHandler(PublishQueueAsync *q);
         char fromGPS[256]; 
         char toGPS[256]; 
+        char yStdBuf[380]; 
         int GPSState = 1;     
         String pubData = "";
         void getChar();
         void setGPS(const char *data);
         void locationCallback(float lat, float lon, float accuracy);
         GoogleMapsDeviceLocator locator;// = GoogleMapsDeviceLocator();
+        int txStdY = 0;
         
     private:
 

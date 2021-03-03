@@ -14,7 +14,7 @@ SYSTEM_THREAD(ENABLED);
 SYSTEM_MODE(SEMI_AUTOMATIC);
 
 //This sets the log level for logging over USB.
-SerialLogHandler logHandler(LOG_LEVEL_NONE, {{"app", LOG_LEVEL_NONE}});
+SerialLogHandler logHandler(LOG_LEVEL_ALL, {{"app", LOG_LEVEL_ALL}});
 
 #define GCP
 
@@ -59,12 +59,13 @@ void testing(const char *event, const char *data)
 //Particle Functions
 int setThreshold(String threshString);
 int setMode(String modeString);
+int setTxStdY(String txStdYString);
 
 //particle varibale
 int threshold = 1;
 int prevThreshold = 1;
 int mode = 1; 
-
+int particleTxStdY = 0;
 void setup()
 {
 
@@ -104,8 +105,10 @@ void setup()
 #ifdef GCP
   Particle.function("setThreshold", setThreshold);
   Particle.function("setMode", setMode);
+  Particle.function("setTxStdY", setTxStdY);
   Particle.variable("threshold", threshold);
   Particle.variable("mode", mode);
+  Particle.variable("txStdY", particleTxStdY);
   if (!Particle.connected())
   {
     Particle.connect();
@@ -224,7 +227,7 @@ void loop()
     memcpy(spi_buff, location, BLE_RX_DATA_SIZE);
 
     spi_buff[244] = 0; //Last byte indicate this data is from node 0.
-    Log.info("x: %d y: %d, z: %d", *((int16_t *)&spi_buff[0]), *((int16_t *)&spi_buff[2]), *((int16_t *)&spi_buff[4]));
+    //Log.info("x: %d y: %d, z: %d", *((int16_t *)&spi_buff[0]), *((int16_t *)&spi_buff[2]), *((int16_t *)&spi_buff[4]));
     //delay?
     spiBusy = true;
     digitalWrite(CS, LOW);
@@ -265,5 +268,12 @@ int setMode(String modeString) {
   char buf[255];
   sprintf(buf, "%d: %d\n", SET_MODE, mode);
   Serial1.printf(buf);  
+  return 1;
+}
+
+int setTxStdY(String txStdYString){
+  Serial.println(txStdYString);
+  cmdHandler.txStdY = txStdYString.toInt(); 
+  particleTxStdY = txStdYString.toInt(); 
   return 1;
 }
