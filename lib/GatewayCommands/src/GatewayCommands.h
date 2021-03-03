@@ -28,6 +28,7 @@ typedef enum{
     SET_END_TIME,
     SET_THRESHOLD,
     SET_MODE, 
+    TX_STD_Y,
     NUM_GATEWAY_COMMANDS
 } GatewayCommand_t;
 //NUM_GATEWAY_COMMANDS should always be last... Then it corresponds to the number of commands in the enum, since the enumeration starts at 0...

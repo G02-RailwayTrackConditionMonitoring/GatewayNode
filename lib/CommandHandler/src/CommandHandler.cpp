@@ -191,11 +191,30 @@ void CommandHandler::handleCommand(char* cmdString){
         case SET_START_TIME:   {
                                   startTime = Time.timeStr();
                                   Log.info("start time: %s",startTime.c_str());
+                                  break;
                                }
         case SET_END_TIME:   {
                                   endTime = Time.timeStr();
                                   Log.info("end time: %s",endTime.c_str());
+                                  break;
                                }            
+        case TX_STD_Y:        {
+                                
+                                if(strlen(yStdBuf)>=360){
+                                  //Particle Publish
+                                  
+                                  if(txStdY ==1){
+                                    Log.info("STD Y Data %s",yStdBuf);
+                                    snprintf(publishBuffer,PUBLISH_BUFFER_SIZE-1,"yStd:%s,t:%s\n",yStdBuf, Time.timeStr().c_str());
+                                    publishQueue->publish("telemetry",publishBuffer,PRIVATE);
+                                  }
+                                  
+                                  memset(yStdBuf, 0, 380);
+                                }
+                                sprintf(yStdBuf+strlen(yStdBuf),"%s",data);
+                                break;
+
+                              }                               
                                                       
 
         default:                Log.warn("Invalid command received: %d",cmdNum);
