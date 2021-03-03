@@ -14,7 +14,7 @@ SYSTEM_THREAD(ENABLED);
 SYSTEM_MODE(SEMI_AUTOMATIC);
 
 //This sets the log level for logging over USB.
-SerialLogHandler logHandler(LOG_LEVEL_NONE, {{"app", LOG_LEVEL_NONE}});
+SerialLogHandler logHandler(LOG_LEVEL_ALL, {{"app", LOG_LEVEL_ALL}});
 
 #define GCP
 
@@ -262,6 +262,7 @@ int setThreshold(String threshString) {
 int setMode(String modeString) {
   Serial.println(modeString);
   mode = modeString.toInt(); 
+  BleStack.sendCommand(&mode,1);
   char buf[255];
   sprintf(buf, "%d: %d\n", SET_MODE, mode);
   Serial1.printf(buf);  

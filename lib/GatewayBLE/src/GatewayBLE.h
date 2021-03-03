@@ -20,7 +20,7 @@
 #define BENCHMARK_END_FLAG      0x5A
 
 #define BLE_RX_DATA_SIZE        244     //The number of bytes for each BLE data packet.
-#define BLE_RX_BUFFER_COUNT     6       //Number of buffers for each node. Total memory used for buffers will be BLE_RX_BUFFER_COUNT*BLE_RX_DATA_SIZE*BLE_MAX_CONNECTION.
+#define BLE_RX_BUFFER_COUNT     12       //Number of buffers for each node. Total memory used for buffers will be BLE_RX_BUFFER_COUNT*BLE_RX_DATA_SIZE*BLE_MAX_CONNECTION.
 
 //This groups useful info about a connection together.
 typedef struct{
